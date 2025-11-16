@@ -60,15 +60,24 @@ export async function POST(
 
     // Create notification for creator
     await Notification.create({
-      userId: post.creatorId._id,
+      recipientId: post.creatorId._id,
+      senderId: session.user.id,
+      organizationId: post.projectId.organizationId,
       type: 'post_rejected',
+      priority: 'normal',
       title: 'Post Rejected',
       message: reason 
         ? `Your post was rejected: ${reason}`
         : 'Your post was rejected',
+      status: 'unread',
+      relatedEntity: {
+        type: 'post',
+        id: post._id,
+      },
       metadata: {
         postId: post._id,
         projectId: post.projectId._id,
+        postUrl: post.postUrl,
         reason: reason || 'No reason provided',
       },
     });

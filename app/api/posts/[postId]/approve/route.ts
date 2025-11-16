@@ -58,13 +58,22 @@ export async function POST(
 
     // Create notification for creator
     await Notification.create({
-      userId: post.creatorId._id,
+      recipientId: post.creatorId._id,
+      senderId: session.user.id,
+      organizationId: post.projectId.organizationId,
       type: 'post_approved',
+      priority: 'normal',
       title: 'Post Approved',
       message: `Your post for ${post.projectId.name} has been approved`,
+      status: 'unread',
+      relatedEntity: {
+        type: 'post',
+        id: post._id,
+      },
       metadata: {
         postId: post._id,
         projectId: post.projectId._id,
+        postUrl: post.postUrl,
       },
     });
 

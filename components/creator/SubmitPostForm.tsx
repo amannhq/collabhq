@@ -15,7 +15,7 @@ import { Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 const submitPostSchema = z.object({
   postUrl: z.string()
     .url('Please enter a valid URL')
-    .regex(/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/.*\/status\/\d+/, 'Must be a valid Twitter/X post URL'),
+    .regex(/^https?:\/\/(www\.)?(twitter\.com|x\.com)\/[^/]+\/status\/\d{10,20}/, 'Must be a valid Twitter/X post URL'),
 });
 
 type SubmitPostFormData = z.infer<typeof submitPostSchema>;
@@ -41,6 +41,9 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
   });
 
   const onSubmit = async (data: SubmitPostFormData) => {
+    // Prevent double submission
+    if (isSubmitting || success) return;
+    
     setIsSubmitting(true);
     setError(null);
     setSuccess(false);
@@ -72,7 +75,6 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
       }, 2000);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
       setIsSubmitting(false);
     }
   };

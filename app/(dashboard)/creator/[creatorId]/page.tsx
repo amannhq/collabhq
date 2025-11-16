@@ -90,8 +90,8 @@ export default async function CreatorDashboardPage({
 
     // Get recent metrics updates
   const recentMetrics = await Metrics.find({ creatorId: creator._id })
-    .select('action entityType createdAt')
-    .sort({ createdAt: -1 })
+    .select('postId metrics recordedAt')
+    .sort({ recordedAt: -1 })
     .limit(10)
     .lean() as unknown as IMetrics[];
 
@@ -135,15 +135,28 @@ export default async function CreatorDashboardPage({
     _id: post._id.toString(),
     postUrl: post.postUrl,
     status: post.status,
-    latestMetrics: post.latestMetrics,
-    createdAt: post.createdAt,
+    latestMetrics: post.latestMetrics
+      ? {
+          likes: post.latestMetrics.likes || 0,
+          retweets: post.latestMetrics.retweets || 0,
+          replies: post.latestMetrics.replies || 0,
+          quotes: post.latestMetrics.quotes || 0,
+          impressions: post.latestMetrics.impressions || 0,
+          engagementRate: post.latestMetrics.engagementRate || 0,
+          bookmarks: post.latestMetrics.bookmarks,
+          views: post.latestMetrics.views,
+          lastUpdatedAt: post.latestMetrics.lastUpdatedAt?.toISOString() || new Date().toISOString(),
+          updatedBy: post.latestMetrics.updatedBy?.toString(),
+        }
+      : undefined,
+    createdAt: post.createdAt.toISOString(),
   }));
 
   const recentActivity = recentMetrics.map((metric) => ({
     _id: metric._id.toString(),
     type: 'metrics_updated' as const,
     description: 'Updated post metrics',
-    timestamp: metric.recordedAt,
+    timestamp: metric.recordedAt.toISOString(),
     metadata: {
       postUrl: (metric.postId as { postUrl?: string })?.postUrl,
       metrics: metric.metrics,

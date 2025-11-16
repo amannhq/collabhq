@@ -47,7 +47,7 @@ export default function LoginPage() {
     }
   };
 
-  const onSubmit = async (data: LoginInput) =>{
+  const onSubmit = async (data: LoginInput) => {
     try {
       setIsLoading(true);
       setError(null);
@@ -62,9 +62,43 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect based on user role
-      router.push('/dashboard');
-      router.refresh();
+      // Wait for session to be established
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Get user data
+      const userResponse = await fetch('/api/auth/user');
+      
+      if (userResponse.ok) {
+        const userData = await userResponse.json();
+        
+        if (userData.success && userData.data) {
+          const user = userData.data;
+          
+          // Check if this is a creator trying to use admin login
+          if (user.role === 'creator') {
+            setError('Creators should use the creator login page.');
+            await authClient.signOut();
+            return;
+          }
+          
+          // For admin/owner, get their organization and redirect there
+          if (user.organizationId) {
+            const orgResponse = await fetch(`/api/organizations/${user.organizationId}`);
+            
+            if (orgResponse.ok) {
+              const orgData = await orgResponse.json();
+              
+              if (orgData.success && orgData.data) {
+                router.push(`/${orgData.data.slug}`);
+                router.refresh();
+                return;
+              }
+            }
+          }
+        }
+      }
+      
+      setError('Failed to get user data. Please try again.');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -189,11 +223,17 @@ export default function LoginPage() {
         </form>
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex flex-col gap-3">
         <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
           Don&apos;t have an account?{' '}
           <Link href="/signup" className="text-blue-600 hover:text-blue-500 font-medium">
             Sign up
+          </Link>
+        </p>
+        <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
+          Are you a creator?{' '}
+          <Link href="/creator-login" className="text-blue-600 hover:text-blue-500 font-medium">
+            Creator Login
           </Link>
         </p>
       </CardFooter>

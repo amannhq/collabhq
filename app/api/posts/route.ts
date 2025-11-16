@@ -170,18 +170,53 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Extract tweet ID from URL (handles query parameters like ?s=20, ?t=xxx&s=19, etc.)
+    // Twitter/X tweet IDs are 19 digits long
+    const tweetIdMatch = postUrl.match(/\/status\/(\d{10,20})(?:[/?#&]|$)/);
+    if (!tweetIdMatch) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid Twitter/X post URL. URL must contain /status/{tweet_id}' },
+        { status: 400 }
+      );
+    }
+    const tweetId = tweetIdMatch[1];
+
+    // Get organization ID from project
+    const organizationId = project.organizationId._id || project.organizationId;
+
     // Create post
     const post = await Post.create({
       projectId,
       creatorId: session.user.id,
+      organizationId,
       postUrl,
-      caption: caption || '',
+      tweetId,
+      content: caption || '',
       status: project.settings.requirePostApproval ? 'pending' : 'approved',
-      latestMetrics: metrics || {
-        likes: 0,
-        retweets: 0,
-        replies: 0,
-        impressions: 0,
+      latestMetrics: {
+        likes: metrics?.likes || 0,
+        retweets: metrics?.retweets || 0,
+        replies: metrics?.replies || 0,
+        quotes: metrics?.quotes || 0,
+        impressions: metrics?.impressions || 0,
+        engagementRate: 0, // Will be calculated
+        lastUpdatedAt: new Date(),
+        updatedBy: session.user.id,
+      },
+      growth: {
+        likesDelta: 0,
+        retweetsDelta: 0,
+        repliesDelta: 0,
+        impressionsDelta: 0,
+        engagementRateDelta: 0,
+      },
+      reminders: {
+        sentCount: 0,
+        reminderFrequency: project.settings.reminderFrequencyHours || 24,
+      },
+      metadata: {
+        hasMedia: false,
+        hasLinks: false,
       },
     });
 
@@ -199,14 +234,23 @@ export async function POST(request: NextRequest) {
     if (post.status === 'pending') {
       const { Notification } = await import('@/lib/db/models');
       await Notification.create({
-        userId: project.organizationId.ownerId,
-        type: 'post_pending',
+        recipientId: project.organizationId.ownerId,
+        senderId: session.user.id,
+        organizationId,
+        type: 'post_submitted',
+        priority: 'normal',
         title: 'New Post Pending Approval',
         message: `${user.name} submitted a new post for ${project.name}`,
+        status: 'unread',
+        relatedEntity: {
+          type: 'post',
+          id: post._id,
+        },
         metadata: {
           postId: post._id,
           projectId: project._id,
           creatorId: session.user.id,
+          postUrl,
         },
       });
     }

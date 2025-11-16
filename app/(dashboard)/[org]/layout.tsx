@@ -48,6 +48,15 @@ export default async function OrganizationLayout({
     redirect('/');
   }
 
+  // Get pending posts count
+  const { Project, Post } = await import('@/lib/db/models');
+  const projects = await Project.find({ organizationId: organization._id }).select('_id').lean();
+  const projectIds = projects.map((p) => p._id);
+  const pendingPostsCount = await Post.countDocuments({
+    projectId: { $in: projectIds },
+    status: 'pending',
+  });
+
   return (
     <SidebarProvider>
       <AdminSidebar
@@ -57,6 +66,7 @@ export default async function OrganizationLayout({
         userEmail={session.user.email}
         userId={session.user.id}
         organizationId={organization._id.toString()}
+        pendingPostsCount={pendingPostsCount}
       />
       <div className="flex flex-col flex-1">
         <Header

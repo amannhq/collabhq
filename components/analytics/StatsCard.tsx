@@ -1,13 +1,15 @@
 'use client';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { LucideIcon, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Eye, Heart, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+type IconType = 'trending-up' | 'eye' | 'heart' | 'award';
 
 interface StatsCardProps {
   title: string;
   value: string | number;
-  icon: LucideIcon;
+  iconType: IconType;
   description?: string;
   trend?: {
     value: number;
@@ -19,11 +21,21 @@ interface StatsCardProps {
 export function StatsCard({
   title,
   value,
-  icon: Icon,
+  iconType,
   description,
   trend,
   className,
 }: StatsCardProps) {
+  // Map icon type to component
+  const iconMap = {
+    'trending-up': TrendingUp,
+    'eye': Eye,
+    'heart': Heart,
+    'award': Award,
+  };
+  
+  const Icon = iconMap[iconType];
+
   const getTrendIcon = () => {
     if (!trend) return null;
     if (trend.value > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;

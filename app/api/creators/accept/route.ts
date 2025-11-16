@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     // Send welcome email with temporary password
     if (organization) {
       try {
-        const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`;
+        const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/creator-login`;
         await sendWelcomeEmail({
           email: invitation.email,
           name: invitation.creatorData.name,

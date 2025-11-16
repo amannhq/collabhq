@@ -35,9 +35,17 @@ interface AdminSidebarProps {
   userEmail?: string;
   userId?: string;
   organizationId?: string;
+  pendingPostsCount?: number;
 }
 
-const navigation = [
+interface NavItem {
+  name: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  badge?: boolean;
+}
+
+const navigationItems: NavItem[] = [
   {
     name: 'Overview',
     href: '',
@@ -57,6 +65,7 @@ const navigation = [
     name: 'Posts',
     href: '/posts',
     icon: FileText,
+    badge: true,
   },
   {
     name: 'Analytics',
@@ -70,7 +79,7 @@ const navigation = [
   },
 ];
 
-export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, organizationId }: AdminSidebarProps) {
+export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, organizationId, pendingPostsCount = 0 }: AdminSidebarProps) {
   const pathname = usePathname();
   const { open, toggleSidebar } = useSidebar();
 
@@ -145,9 +154,10 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, or
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigation.map((item) => {
+              {navigationItems.map((item) => {
                 const active = isActive(item.href);
                 const Icon = item.icon;
+                const showBadge = item.badge && pendingPostsCount > 0;
 
                 return (
                   <SidebarMenuItem key={item.name}>
@@ -155,6 +165,11 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, or
                       <Link href={`/${orgSlug}${item.href}`}>
                         <Icon />
                         <span>{item.name}</span>
+                        {showBadge && (
+                          <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white">
+                            {pendingPostsCount > 9 ? '9+' : pendingPostsCount}
+                          </span>
+                        )}
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>

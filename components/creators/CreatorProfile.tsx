@@ -137,7 +137,7 @@ export function CreatorProfile({ creator }: CreatorProfileProps) {
                 {creator.twitterHandle && (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Twitter className="h-4 w-4" />
-                    @{creator.twitterHandle}
+                    {creator.twitterHandle.startsWith('@') ? creator.twitterHandle : `@${creator.twitterHandle}`}
                   </div>
                 )}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

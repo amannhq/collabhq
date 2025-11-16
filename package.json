@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "bun --bun next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "bun --bun next start",
+    "start": "next start",
     "lint": "eslint",
     "db:init": "bun scripts/init-db.ts",
     "db:seed": "bun scripts/seed-db.ts",

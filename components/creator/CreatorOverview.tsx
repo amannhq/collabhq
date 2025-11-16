@@ -30,8 +30,8 @@ interface CreatorOverviewProps {
       replies?: number;
       impressions?: number;
     };
-    createdAt: Date;
-    approvedAt?: Date;
+    createdAt: string;
+    approvedAt?: string;
   }>;
   creatorId: string;
 }

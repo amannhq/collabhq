@@ -3,26 +3,27 @@ import { BaseEmailTemplate } from './BaseEmailTemplate';
 
 interface WelcomeEmailProps {
   name: string;
+  email: string;
   organizationName: string;
-  projectName?: string;
+  projectName: string;
   temporaryPassword: string;
   dashboardUrl: string;
   branding?: {
+    logo?: string;
     primaryColor?: string;
     secondaryColor?: string;
-    logoUrl?: string;
-    fontFamily?: string;
   };
 }
 
-export const WelcomeEmail = ({
+export function WelcomeEmail({
   name,
+  email,
   organizationName,
   projectName,
   temporaryPassword,
   dashboardUrl,
   branding,
-}: WelcomeEmailProps) => {
+}: WelcomeEmailProps) {
   const bodyContent = `
     <p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #333;">
       Hi ${name},
@@ -32,14 +33,10 @@ export const WelcomeEmail = ({
       Welcome to <strong>${organizationName}</strong>${projectName ? ` for the <strong>${projectName}</strong> project` : ''}! Your account has been successfully created and you're ready to start tracking your content performance.
     </p>
     
-    <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 24px 0; border-radius: 8px;">
-      <p style="font-weight: 600; margin: 0 0 12px 0; color: #92400e; font-size: 16px;">🔑 Your Login Credentials</p>
-      <div style="background: white; padding: 16px; border-radius: 6px; margin-top: 12px;">
-        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;"><strong>Email:</strong> ${name}</p>
-        <p style="margin: 0; color: #666; font-size: 14px;"><strong>Temporary Password:</strong> <code style="background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 14px; color: #1f2937;">${temporaryPassword}</code></p>
-      </div>
-      <p style="margin: 12px 0 0 0; color: #92400e; font-size: 13px;">⚠️ Please change your password after your first login for security.</p>
-    </div>
+          <div style="background: #f8f5e6; border-left: 4px solid #d4a574; padding: 20px; margin: 24px 0; border-radius: 4px;">
+        <h3 style="margin: 0 0 12px 0; color: #8b6914; font-size: 16px; font-weight: 600;">🔑 Your Login Credentials</h3>
+        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;"><strong>Email:</strong> ${email}</p>
+        <p style="margin: 0 0 8px 0; color: #666; font-size: 14px;"><strong>Temporary Password:</strong> <code style="background: #fff; padding: 4px 8px; border-radius: 4px; font-family: monospace; color: #333;">${temporaryPassword}</code></p>
     
     <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 16px; margin: 24px 0; border-radius: 4px;">
       <p style="font-weight: 600; margin: 0 0 8px 0; color: #065f46;">What's Next?</p>

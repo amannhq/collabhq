@@ -6,7 +6,7 @@ import type { IUser } from '@/lib/db/models/User';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { StatsCard } from '@/components/analytics/StatsCard';
-import { TrendingUp, Heart, Eye, Award, Repeat, MessageCircle } from 'lucide-react';
+import { Heart, Repeat, MessageCircle } from 'lucide-react';
 
 interface CreatorAnalyticsPageProps {
   params: Promise<{
@@ -144,25 +144,25 @@ export default async function CreatorAnalyticsPage({
         <StatsCard
           title="Total Engagement"
           value={totalEngagement.toLocaleString()}
-          icon={TrendingUp}
+          iconType="trending-up"
           description={`${engagementRate.toFixed(2)}% engagement rate`}
         />
         <StatsCard
           title="Total Impressions"
           value={totalImpressions.toLocaleString()}
-          icon={Eye}
+          iconType="eye"
           description={`Across ${approvedPosts.length} posts`}
         />
         <StatsCard
           title="Avg Likes per Post"
           value={Math.round(totalLikes / (approvedPosts.length || 1)).toLocaleString()}
-          icon={Heart}
+          iconType="heart"
           description="Average performance"
         />
         <StatsCard
           title="Top Post"
           value={topPostEngagement.toLocaleString()}
-          icon={Award}
+          iconType="award"
           description="Best performing post"
         />
       </div>

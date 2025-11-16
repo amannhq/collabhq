@@ -33,7 +33,7 @@ export async function sendEmail({ to, subject, react, from }: SendEmailParams) {
       const html = await render(react);
       
       console.log('\n📧 EMAIL DEBUG (Development Mode):');
-      console.log(`From: ${from || process.env.RESEND_FROM || 'noreply@yourapp.com'}`);
+      console.log(`From: ${from || process.env.RESEND_FROM_EMAIL || 'noreply@yourapp.com'}`);
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
       console.log(`Preview: ${html.substring(0, 200)}...`);
@@ -44,7 +44,7 @@ export async function sendEmail({ to, subject, react, from }: SendEmailParams) {
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: from || process.env.RESEND_FROM || 'onboarding@resend.dev',
+      from: from || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
       to,
       subject,
       react,
@@ -310,8 +310,9 @@ export async function sendWelcomeEmail({
     emailComponent = (
       <WelcomeEmail
         name={name}
+        email={email}
         organizationName={organizationName}
-        projectName={projectName}
+        projectName={projectName || ''}
         temporaryPassword={temporaryPassword || 'temp-password'}
         dashboardUrl={dashboardUrl}
         branding={branding}

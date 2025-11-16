@@ -49,12 +49,12 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
   } = useForm<UpdateMetricsFormData>({
     resolver: zodResolver(updateMetricsSchema),
     defaultValues: {
-      likes: currentMetrics?.likes || 0,
-      retweets: currentMetrics?.retweets || 0,
-      replies: currentMetrics?.replies || 0,
-      impressions: currentMetrics?.impressions || 0,
-      bookmarks: currentMetrics?.bookmarks || 0,
-      profileVisits: currentMetrics?.profileVisits || 0,
+      likes: currentMetrics?.likes,
+      retweets: currentMetrics?.retweets,
+      replies: currentMetrics?.replies,
+      impressions: currentMetrics?.impressions,
+      bookmarks: currentMetrics?.bookmarks,
+      profileVisits: currentMetrics?.profileVisits,
     },
   });
 
@@ -109,7 +109,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                 id="likes"
                 type="number"
                 min="0"
-                {...register('likes')}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                {...register('likes', { valueAsNumber: true })}
                 disabled={isSubmitting || success}
               />
               {errors.likes && (
@@ -124,7 +125,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                 id="retweets"
                 type="number"
                 min="0"
-                {...register('retweets')}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                {...register('retweets', { valueAsNumber: true })}
                 disabled={isSubmitting || success}
               />
               {errors.retweets && (
@@ -139,7 +141,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                 id="replies"
                 type="number"
                 min="0"
-                {...register('replies')}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                {...register('replies', { valueAsNumber: true })}
                 disabled={isSubmitting || success}
               />
               {errors.replies && (
@@ -154,7 +157,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                 id="impressions"
                 type="number"
                 min="0"
-                {...register('impressions')}
+                className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                {...register('impressions', { valueAsNumber: true })}
                 disabled={isSubmitting || success}
               />
               {errors.impressions && (
@@ -174,7 +178,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                   id="bookmarks"
                   type="number"
                   min="0"
-                  {...register('bookmarks')}
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  {...register('bookmarks', { valueAsNumber: true })}
                   disabled={isSubmitting || success}
                 />
                 {errors.bookmarks && (
@@ -189,7 +194,8 @@ export function UpdateMetricsForm({ postId, creatorId, currentMetrics }: UpdateM
                   id="profileVisits"
                   type="number"
                   min="0"
-                  {...register('profileVisits')}
+                  className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  {...register('profileVisits', { valueAsNumber: true })}
                   disabled={isSubmitting || success}
                 />
                 {errors.profileVisits && (

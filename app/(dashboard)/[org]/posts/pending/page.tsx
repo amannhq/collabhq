@@ -10,9 +10,9 @@ import { Organization, Post, Project } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
 
 interface PendingPostsPageProps {
-  params: {
+  params: Promise<{
     org: string;
-  };
+  }>;
 }
 
 async function getPendingPosts(organizationId: string) {
@@ -32,17 +32,33 @@ async function getPendingPosts(organizationId: string) {
     .sort({ createdAt: 1 }) // Oldest first
     .lean();
 
-  // Type assertion for populated Mongoose results
-  type PopulatedPost = {
-    _id: string;
+  // Serialize ObjectIds and Dates for client components
+  type PostLean = {
+    _id: { toString(): string };
     postUrl: string;
-    caption?: string;
-    creatorId: { _id: string; name: string; email: string; twitterHandle?: string };
-    projectId: { _id: string; name: string; settings?: { requirePostApproval?: boolean } };
+    content?: string;
+    creatorId: { _id: { toString(): string }; name: string; email: string; twitterHandle?: string };
+    projectId: { _id: { toString(): string }; name: string; settings?: { requirePostApproval?: boolean } };
     createdAt: Date;
   };
-  
-  return posts as unknown as PopulatedPost[];
+
+  return (posts as unknown as PostLean[]).map((post) => ({
+    _id: post._id.toString(),
+    postUrl: post.postUrl,
+    caption: post.content,
+    creatorId: {
+      _id: post.creatorId._id.toString(),
+      name: post.creatorId.name,
+      email: post.creatorId.email,
+      twitterHandle: post.creatorId.twitterHandle,
+    },
+    projectId: {
+      _id: post.projectId._id.toString(),
+      name: post.projectId.name,
+      settings: post.projectId.settings,
+    },
+    createdAt: post.createdAt.toISOString(),
+  }));
 }
 
 export default async function PendingPostsPage({ params }: PendingPostsPageProps) {

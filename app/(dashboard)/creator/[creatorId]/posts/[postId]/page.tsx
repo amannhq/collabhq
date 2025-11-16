@@ -53,11 +53,26 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   }
 
   // Get metrics history
-  const metricsHistory = await Metrics.find({ postId: post._id })
+  const metricsHistoryRaw = await Metrics.find({ postId: post._id })
     .select('metrics growth recordedAt')
     .sort({ recordedAt: -1 })
     .limit(30)
     .lean() as unknown as IMetrics[];
+
+  // Transform metrics history into timeline events for client component
+  const timelineEvents = metricsHistoryRaw.map((metric) => {
+    const totalEngagement = (metric.metrics.likes || 0) + (metric.metrics.retweets || 0) + (metric.metrics.replies || 0);
+    return {
+      type: 'metrics_updated' as const,
+      date: metric.recordedAt.toISOString(),
+      title: 'Metrics Updated',
+      description: `${totalEngagement.toLocaleString()} total engagements • ${metric.metrics.impressions?.toLocaleString() || 0} impressions`,
+      data: {
+        metrics: metric.metrics,
+        growth: metric.growth,
+      },
+    };
+  });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -280,7 +295,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
       )}
 
       {/* Metrics History */}
-      {post.status === 'approved' && metricsHistory.length > 0 && (
+      {post.status === 'approved' && timelineEvents.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle>Metrics History</CardTitle>
@@ -289,7 +304,7 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <MetricsTimeline events={metricsHistory as unknown as Parameters<typeof MetricsTimeline>[0]['events']} />
+            <MetricsTimeline events={timelineEvents} />
           </CardContent>
         </Card>
       )}

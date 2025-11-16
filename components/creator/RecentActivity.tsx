@@ -15,7 +15,7 @@ interface ActivityItem {
   _id: string;
   type: 'metrics_updated' | 'post_submitted' | 'post_approved' | 'post_rejected';
   description: string;
-  timestamp: Date;
+  timestamp: string;
   metadata?: {
     postUrl?: string;
     metrics?: {

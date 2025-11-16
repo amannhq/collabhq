@@ -1,4 +1,3 @@
-import * as React from 'react';
 import { BaseEmailTemplate } from './BaseEmailTemplate';
 
 interface InvitationEmailProps {

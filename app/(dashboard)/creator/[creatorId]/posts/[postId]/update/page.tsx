@@ -52,6 +52,18 @@ export default async function UpdateMetricsPage({ params }: UpdateMetricsPagePro
     redirect(`/creator/${resolvedParams.creatorId}/posts/${resolvedParams.postId}`);
   }
 
+  // Serialize metrics for client component
+  const currentMetrics = post.latestMetrics
+    ? {
+        likes: post.latestMetrics.likes || 0,
+        retweets: post.latestMetrics.retweets || 0,
+        replies: post.latestMetrics.replies || 0,
+        impressions: post.latestMetrics.impressions || 0,
+        bookmarks: post.latestMetrics.bookmarks,
+        profileVisits: post.latestMetrics.views,
+      }
+    : undefined;
+
   return (
     <div className="space-y-6 max-w-2xl">
       {/* Back Button */}
@@ -66,7 +78,7 @@ export default async function UpdateMetricsPage({ params }: UpdateMetricsPagePro
       <UpdateMetricsForm
         postId={resolvedParams.postId}
         creatorId={resolvedParams.creatorId}
-        currentMetrics={post.latestMetrics}
+        currentMetrics={currentMetrics}
       />
     </div>
   );

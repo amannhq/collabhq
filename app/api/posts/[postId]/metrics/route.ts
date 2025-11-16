@@ -93,6 +93,10 @@ export async function POST(
     // Create new metrics record
     const metricsRecord = await Metrics.create({
       postId: post._id,
+      creatorId: post.creatorId,
+      projectId: post.projectId._id,
+      organizationId: post.projectId.organizationId,
+      submittedBy: session.user.id,
       metrics: newMetrics,
       growth,
       recordedAt: new Date(),

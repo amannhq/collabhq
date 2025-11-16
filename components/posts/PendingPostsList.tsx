@@ -36,7 +36,7 @@ interface Post {
       requirePostApproval?: boolean;
     };
   };
-  createdAt: string | Date;
+  createdAt: string;
 }
 
 interface PendingPostsListProps {

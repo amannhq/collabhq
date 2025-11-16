@@ -93,11 +93,8 @@ export default async function CreatorLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex-1 flex flex-col">
-          <Header orgSlug="" orgName="" />
-          <main className="flex-1 p-6">{children}</main>
-        </div>
-
+        <Header orgSlug="" orgName="" />
+        
         {/* Page Content */}
         <main className="flex-1 overflow-y-auto bg-background p-6">
           {children}
