@@ -26,9 +26,9 @@ import { createLogger } from '@/lib/utils/logger';
 const logger = createLogger('org-dashboard');
 
 interface PageProps {
-  params: {
+  params: Promise<{
     org: string;
-  };
+  }>;
 }
 
 async function getOrganizationData(orgSlug: string, userId: string) {
@@ -360,7 +360,7 @@ export default async function OrganizationDashboard({ params }: PageProps) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Link href={`/${params.org}/posts/pending`}>
+            <Link href={`/${resolvedParams.org}/posts/pending`}>
               <Button variant="outline" className="w-full">
                 Review Pending Posts
               </Button>

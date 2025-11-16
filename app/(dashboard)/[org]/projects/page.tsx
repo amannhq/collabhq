@@ -11,9 +11,9 @@ import Link from 'next/link';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface PageProps {
-  params: {
+  params: Promise<{
     org: string;
-  };
+  }>;
 }
 
 async function getProjectsData(orgSlug: string) {

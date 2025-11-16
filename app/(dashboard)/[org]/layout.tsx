@@ -7,6 +7,9 @@ import { headers } from 'next/headers';
 import connectDB from '@/lib/db/mongodb';
 import { Organization } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('org-layout');
 
 interface OrganizationLayoutProps {
   children: React.ReactNode;
@@ -28,8 +31,15 @@ export default async function OrganizationLayout({
   });
 
   if (!session) {
+    logger.warn({ orgSlug: resolvedParams.org }, 'No session found, redirecting to login');
     redirect('/login');
   }
+
+  logger.info({ 
+    userId: session.user.id, 
+    orgSlug: resolvedParams.org,
+    emailVerified: session.user.emailVerified 
+  }, 'Session found, checking organization access');
 
   // Get organization
   await connectDB();
@@ -38,13 +48,26 @@ export default async function OrganizationLayout({
   }).lean<IOrganization>();
 
   if (!organization) {
+    logger.warn({ orgSlug: resolvedParams.org, userId: session.user.id }, 'Organization not found');
     redirect('/');
   }
+
+  logger.info({
+    orgId: organization._id.toString(),
+    ownerId: organization.ownerId.toString(),
+    userId: session.user.id,
+    match: organization.ownerId.toString() === session.user.id
+  }, 'Checking organization ownership');
 
   // Verify user has access (owner only for now)
   const isOwner = organization.ownerId.toString() === session.user.id;
 
   if (!isOwner) {
+    logger.warn({ 
+      orgId: organization._id.toString(),
+      ownerId: organization.ownerId.toString(), 
+      userId: session.user.id 
+    }, 'User is not organization owner, access denied');
     redirect('/');
   }
 

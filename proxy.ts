@@ -1,39 +1,42 @@
-// proxy.ts
+// proxy.ts - Next.js 16 (replaces middleware.ts)
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow landing page and public routes
-  if (pathname === '/') {
+  // Allow all public routes and API routes
+  const publicPaths = [
+    '/api',
+    '/_next',
+    '/favicon.ico',
+    '/images',
+    '/public',
+    '/',
+    '/login',
+    '/signup',
+    '/invite'
+  ];
+  
+  // Check if path starts with any public path
+  if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
   
-  // Check if route is protected - organization routes like /[org]/...
-  const isProtectedRoute = pathname.match(/^\/[^/]+\/(projects|creators|analytics|settings|posts)/);
-  
-  // Get session token from cookie
-  const sessionToken = request.cookies.get('better-auth.session_token')?.value;
-  
-  // Redirect to login if accessing protected route without session
-  if (isProtectedRoute && !sessionToken) {
-    const url = new URL('/login', request.url);
-    url.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(url);
-  }
-  
-  // For auth routes with active session, only redirect login (not signup)
-  // Signup might be needed if user has no organization
-  if (pathname.startsWith('/login') && sessionToken) {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
-  
+  // For all other routes, let the layouts handle authentication
+  // Don't block here - the [org]/layout.tsx will check session
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 };

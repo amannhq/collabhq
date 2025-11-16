@@ -12,15 +12,15 @@ import { createLogger } from '@/lib/utils/logger';
 const logger = createLogger('creators-page');
 
 interface PageProps {
-  params: {
+  params: Promise<{
     org: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     view?: 'grid' | 'list';
     search?: string;
     project?: string;
     status?: string;
-  };
+  }>;
 }
 
 type CreatorWithProfile = {
