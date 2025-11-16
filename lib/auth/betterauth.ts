@@ -1,5 +1,6 @@
 // lib/auth/betterauth.ts
 import { betterAuth } from "better-auth";
+import { emailOTP } from "better-auth/plugins";
 import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { MongoClient } from "mongodb";
 import { createLogger } from "@/lib/utils/logger";
@@ -8,6 +9,8 @@ import Organization from "@/lib/db/models/Organization";
 import User from "@/lib/db/models/User";
 import { extractCompanyFromEmail } from "@/lib/utils/email-validation";
 import { initializeDefaultTemplates } from "@/lib/utils/email-template-utils";
+import { sendEmail } from "@/lib/services/email/email-service";
+import { OTPEmail } from "@/lib/services/email/templates/OTPEmail";
 
 const logger = createLogger('better-auth');
 
@@ -111,6 +114,36 @@ export const auth = betterAuth({
     disabled: false,
   },
   
+  plugins: [
+    emailOTP({
+      async sendVerificationOTP({ email, otp, type }) {
+        try {
+          // Determine email subject based on type
+          const subjects = {
+            'email-verification': 'Verify Your Email - Collab',
+            'sign-in': 'Sign In Code - Collab',
+            'forget-password': 'Reset Your Password - Collab',
+          };
+
+          // Send OTP email using professional template
+          await sendEmail({
+            to: email,
+            subject: subjects[type as keyof typeof subjects] || 'Verification Code - Collab',
+            react: OTPEmail({ otp, type: type as 'email-verification' | 'sign-in' | 'forget-password' }),
+          });
+          
+          logger.info({ email, type }, 'OTP sent successfully');
+        } catch (error) {
+          logger.error({ error, email, type }, 'Failed to send OTP email');
+          throw error;
+        }
+      },
+      otpLength: 6,
+      expiresIn: 300, // 5 minutes
+      sendVerificationOnSignUp: false, // We'll trigger manually
+    }),
+  ],
+  
   databaseHooks: {
     user: {
       create: {
@@ -124,6 +157,22 @@ export const auth = betterAuth({
           };
         },
         after: async (user) => {
+          // IMPORTANT: Only create organization if email is verified
+          // Email verification will be handled separately via OTP
+          // Organization creation happens after email verification
+          
+          // Check if this is a social login (Google) - they have emailVerified by default
+          const isSocialLogin = user.emailVerified === true;
+          
+          if (!isSocialLogin) {
+            logger.info(
+              { userId: user.id, email: user.email },
+              'User created, waiting for email verification before creating organization'
+            );
+            return;
+          }
+          
+          // For social logins, create organization immediately
           try {
             // Connect to MongoDB
             await connectDB();
@@ -180,7 +229,7 @@ export const auth = betterAuth({
                 organizationId: organization._id.toString(),
                 slug,
               }, 
-              'Organization created for new user'
+              'Organization created for social login user'
             );
 
             // Initialize default email templates for the organization

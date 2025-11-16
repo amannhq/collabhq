@@ -35,10 +35,10 @@ export const BaseEmailTemplate = ({
   previewText,
 }: BaseEmailTemplateProps) => {
   const {
-    primaryColor = '#667eea',
-    secondaryColor = '#764ba2',
+    primaryColor = '#000000',
+    secondaryColor = '#000000',
     logoUrl,
-    fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    fontFamily = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   } = branding;
 
   return (
@@ -118,23 +118,24 @@ export const BaseEmailTemplate = ({
 
 // Styles
 const main = {
-  backgroundColor: '#f6f9fc',
-  padding: '20px 0',
+  backgroundColor: '#f3f1ea',
+  padding: '40px 0',
 };
 
 const container = {
   backgroundColor: '#ffffff',
   margin: '0 auto',
   marginBottom: '64px',
-  borderRadius: '8px',
+  borderRadius: '16px',
   overflow: 'hidden' as const,
   maxWidth: '600px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
 };
 
 const header = {
-  padding: '20px',
+  padding: '32px',
   textAlign: 'center' as const,
-  borderBottom: '1px solid #e5e7eb',
+  backgroundColor: '#f3f1ea',
 };
 
 const logo = {
@@ -143,50 +144,53 @@ const logo = {
 };
 
 const headerSection = {
-  padding: '30px',
+  padding: '40px',
   textAlign: 'center' as const,
   color: '#ffffff',
+  backgroundColor: '#000000',
 };
 
 const h1 = {
   color: '#ffffff',
-  fontSize: '28px',
-  fontWeight: 'bold',
+  fontSize: '32px',
+  fontWeight: '600',
   margin: '0',
   padding: '0',
+  letterSpacing: '-0.5px',
 };
 
 const contentSection = {
-  padding: '30px',
+  padding: '40px',
 };
 
 const buttonContainer = {
   textAlign: 'center' as const,
-  margin: '30px 0',
+  margin: '32px 0',
 };
 
 const button = {
-  backgroundColor: '#667eea',
-  borderRadius: '6px',
+  backgroundColor: '#000000',
+  borderRadius: '12px',
   color: '#ffffff',
-  fontSize: '16px',
-  fontWeight: 'bold',
+  fontSize: '17px',
+  fontWeight: '600',
   textDecoration: 'none',
   textAlign: 'center' as const,
   display: 'inline-block',
-  padding: '14px 28px',
+  padding: '16px 32px',
+  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
 };
 
 const linkText = {
   fontSize: '14px',
-  color: '#6b7280',
-  marginTop: '20px',
+  color: 'rgba(0, 0, 0, 0.5)',
+  marginTop: '24px',
   textAlign: 'center' as const,
 };
 
 const link = {
-  color: '#667eea',
-  textDecoration: 'none',
+  color: '#000000',
+  textDecoration: 'underline',
   display: 'block',
   marginTop: '8px',
   wordBreak: 'break-all' as const,
@@ -194,14 +198,14 @@ const link = {
 
 const footer = {
   textAlign: 'center' as const,
-  padding: '20px',
-  borderTop: '1px solid #e5e7eb',
-  backgroundColor: '#f9fafb',
+  padding: '32px',
+  borderTop: '1px solid rgba(0, 0, 0, 0.1)',
+  backgroundColor: '#f3f1ea',
 };
 
 const footerText = {
-  color: '#6b7280',
-  fontSize: '12px',
+  color: 'rgba(0, 0, 0, 0.5)',
+  fontSize: '13px',
   margin: '0',
 };
 

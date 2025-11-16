@@ -2,8 +2,12 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Hero } from "@/components/ui/hero";
+import { Features } from "@/components/ui/features";
+import { Pricing } from "@/components/ui/pricing";
+import type { PricingTier } from "@/components/ui/pricing";
+import { BarChart3, Users, Sparkles } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
@@ -39,178 +43,162 @@ export default async function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-zinc-50 to-white dark:from-zinc-950 dark:to-zinc-900">
+    <div className="min-h-screen bg-[#f3f1ea]">
       {/* Navigation */}
-      <header className="border-b">
+      <header className="border-b border-zinc-200/50 bg-[#f3f1ea]">
         <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-              Creator Tracker
+            <h1 className="text-2xl font-bold text-zinc-900">
+              Collab
             </h1>
-            <Badge variant="secondary">SaaS</Badge>
           </div>
           <div className="flex gap-3">
             <Button variant="ghost" asChild>
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild>
+            <Button asChild className="bg-zinc-900 hover:bg-zinc-800">
               <Link href="/signup">Get Started</Link>
             </Button>
           </div>
         </nav>
       </header>
 
-      <main className="container mx-auto px-4">
+      <main>
         {/* Hero Section */}
-        <section className="py-20 text-center">
-          <Badge className="mb-4" variant="outline">
-            Multi-Tenant Creator Management Platform
-          </Badge>
-          <h2 className="text-5xl font-bold tracking-tight mb-6 bg-gradient-to-r from-zinc-900 to-zinc-700 dark:from-zinc-100 dark:to-zinc-300 bg-clip-text text-transparent">
-            Track, Manage, and Grow
-            <br />
-            Your Creator Network
-          </h2>
-          <p className="text-xl text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto mb-8">
-            Streamline creator collaboration, track performance metrics, and manage projects all in one powerful platform.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Button size="lg" asChild>
-              <Link href="/signup">Start Free Trial</Link>
-            </Button>
-            <Button size="lg" variant="outline" asChild>
-              <Link href="#features">Learn More</Link>
-            </Button>
-          </div>
-        </section>
+        <Hero
+          eyebrow="THE CREATOR MANAGEMENT PLATFORM"
+          title={
+            <>
+              <div className="whitespace-nowrap">
+                <span className="font-serif font-normal">Your creators, </span>
+                <span className="font-serif font-normal italic">seamlessly </span>
+                <span className="font-serif font-normal">connected</span>
+              </div>
+              <div className="font-serif font-normal">
+                to your workflow
+              </div>
+            </>
+          }
+          subtitle="Collab brings your creator partnerships, content tracking, and performance metrics together so you can focus on growing results, not managing spreadsheets"
+          ctaText="Get started free"
+          ctaLink="/signup"
+          mockupImage={{
+            src: "/images/mockup.avif",
+            alt: "Collab Dashboard Interface",
+            width: 1600,
+            height: 1200
+          }}
+        />
 
-        <Separator className="my-12" />
+        <Separator className="my-12 container mx-auto bg-zinc-200" />
 
         {/* Features Section */}
-        <section id="features" className="py-16">
-          <div className="text-center mb-12">
-            <h3 className="text-3xl font-bold mb-4">Everything You Need</h3>
-            <p className="text-zinc-600 dark:text-zinc-400 max-w-2xl mx-auto">
-              Powerful features designed for modern creator management teams
-            </p>
-          </div>
+        <Features />
 
-          <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">📊</span>
-                  Real-Time Analytics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Track engagement, reach, and performance metrics across all your creators and projects with live updates.
-                </CardDescription>
-              </CardContent>
-            </Card>
+        <Separator className="my-12 container mx-auto bg-zinc-200" />
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">👥</span>
-                  Multi-Tenant Support
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Manage multiple organizations, projects, and creator teams with complete data isolation and security.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🚀</span>
-                  Project Management
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Organize creator campaigns, track deliverables, and manage workflows from a single dashboard.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">📝</span>
-                  Content Tracking
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Monitor post submissions, approvals, and performance metrics with detailed analytics and insights.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔔</span>
-                  Smart Notifications
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Stay updated with real-time notifications for submissions, approvals, and important project updates.
-                </CardDescription>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <span className="text-2xl">🔒</span>
-                  Enterprise Security
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription>
-                  Built with Better Auth and MongoDB for robust authentication, data protection, and compliance.
-                </CardDescription>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Pricing Section */}
+        <section className="bg-[#f3f1ea]">
+          <Pricing
+            tag="PRICING"
+            title="Start managing creators today"
+            description="Choose the plan that fits your team's needs"
+            tiers={[
+              {
+                name: "Starter",
+                icon: <Users className="w-6 h-6" />,
+                price: 29,
+                description: "Perfect for small teams getting started",
+                features: [
+                  "Up to 5 creators",
+                  "Basic analytics dashboard",
+                  "Content approval workflow",
+                  "Email support",
+                  "30-day data history",
+                ],
+                cta: "Start free trial",
+              },
+              {
+                name: "Professional",
+                icon: <BarChart3 className="w-6 h-6" />,
+                price: 99,
+                description: "For growing teams managing multiple campaigns",
+                features: [
+                  "Up to 25 creators",
+                  "Advanced analytics & insights",
+                  "Project management tools",
+                  "Priority support",
+                  "Unlimited data history",
+                  "Custom branding",
+                ],
+                popular: true,
+                cta: "Start free trial",
+              },
+              {
+                name: "Enterprise",
+                icon: <Sparkles className="w-6 h-6" />,
+                price: 0,
+                description: "For agencies and large organizations",
+                features: [
+                  "Unlimited creators",
+                  "Custom integrations",
+                  "Dedicated account manager",
+                  "SLA guarantee",
+                  "Advanced security & compliance",
+                  "API access",
+                ],
+                cta: "Contact sales",
+              },
+            ]}
+          />
         </section>
 
-        <Separator className="my-12" />
+        <Separator className="my-12 container mx-auto bg-zinc-200" />
 
         {/* CTA Section */}
-        <section className="py-16 text-center">
-          <Card className="max-w-3xl mx-auto bg-gradient-to-br from-blue-50 to-violet-50 dark:from-blue-950/50 dark:to-violet-950/50 border-blue-200 dark:border-blue-800">
-            <CardHeader>
-              <CardTitle className="text-3xl">Ready to Get Started?</CardTitle>
-              <CardDescription className="text-lg">
-                Join teams already using Creator Tracker to manage their creator networks
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex gap-4 justify-center">
-                <Button size="lg" asChild>
-                  <Link href="/signup">Create Account</Link>
-                </Button>
-                <Button size="lg" variant="outline" asChild>
-                  <Link href="/login">Sign In</Link>
-                </Button>
+        <section className="py-20 bg-white">
+          <div className="container mx-auto px-4">
+            <div className="max-w-5xl mx-auto bg-zinc-900 text-white rounded-2xl p-12 md:p-16 text-center relative overflow-hidden">
+              {/* Subtle background pattern */}
+              <div className="absolute inset-0 opacity-5">
+                <div className="absolute top-0 left-0 w-64 h-64 bg-white rounded-full blur-3xl"></div>
+                <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full blur-3xl"></div>
               </div>
-            </CardContent>
-          </Card>
+              
+              <div className="relative z-10">
+                <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-serif font-normal text-white mb-6 leading-tight">
+                  Ready to streamline your creator operations?
+                </h2>
+                <p className="text-base sm:text-lg md:text-xl lg:text-[22px] text-zinc-300 mb-10 max-w-3xl mx-auto leading-relaxed font-sans">
+                  Join teams managing thousands of creator partnerships with Collab
+                </p>
+                <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                  <Button 
+                    size="lg" 
+                    asChild 
+                    className="bg-white text-zinc-900 hover:bg-zinc-100 px-8 py-6 text-base sm:text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  >
+                    <Link href="/signup">Start Free Trial</Link>
+                  </Button>
+                  <Button 
+                    size="lg" 
+                    variant="ghost" 
+                    asChild 
+                    className="border-2 border-zinc-700 text-white hover:bg-zinc-800 hover:border-zinc-600 px-8 py-6 text-base sm:text-lg font-medium rounded-xl transition-all"
+                  >
+                    <Link href="/login">Sign In</Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </section>
       </main>
 
       {/* Footer */}
-      <footer className="border-t mt-20">
-        <div className="container mx-auto px-4 py-8 text-center text-sm text-zinc-600 dark:text-zinc-400">
-          <p>© 2024 Creator Tracker. Built with Next.js, MongoDB, and Better Auth.</p>
+      <footer className="border-t border-zinc-200 bg-[#f3f1ea]">
+        <div className="container mx-auto px-4 py-10 text-center">
+          <p className="text-sm text-zinc-600">© 2024 Collab. Built for creator-first teams.</p>
         </div>
       </footer>
     </div>

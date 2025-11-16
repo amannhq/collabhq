@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
       {
         organizationId: invitation.organizationId,
         role: 'creator',
+        requirePasswordChange: true, // Force password change on first login
         creatorProfile: {
           twitterHandle: invitation.creatorData.twitterHandle,
           projectId: invitation.projectId,

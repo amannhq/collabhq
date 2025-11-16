@@ -46,12 +46,12 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
       }
 
       toast.success('Invitation accepted!', {
-        description: 'Your account has been created. Redirecting to login...',
+        description: 'Check your email for login credentials.',
       });
 
-      // Redirect to login after 2 seconds
+      // Redirect to creator login after 2 seconds
       setTimeout(() => {
-        router.push('/login');
+        router.push('/creator-login');
       }, 2000);
     } catch (error) {
       console.error('Error accepting invitation:', error);
@@ -168,7 +168,11 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
           <ul className="space-y-2">
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <span>A creator account will be created with your email</span>
+              <span>Your creator account will be created instantly</span>
+            </li>
+            <li className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <span>You&apos;ll receive an email with your login credentials</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -176,14 +180,18 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <span>You can start submitting posts for review</span>
-            </li>
-            <li className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <span>You&apos;ll receive login credentials via email</span>
+              <span>You can start submitting posts for tracking and review</span>
             </li>
           </ul>
         </div>
+
+        {/* Important Notice */}
+        <Alert className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/50">
+          <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertDescription className="text-sm text-blue-800 dark:text-blue-200">
+            <strong>Important:</strong> After accepting, check your email ({invitation.email}) for your temporary password and login instructions.
+          </AlertDescription>
+        </Alert>
 
         {/* Expiration Warning */}
         <Alert>

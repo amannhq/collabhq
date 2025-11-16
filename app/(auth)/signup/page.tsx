@@ -21,6 +21,8 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { OTPVerification } from '@/components/auth/OTPVerification';
+import { toast } from 'sonner';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -30,6 +32,8 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordFocus, setPasswordFocus] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [userEmail, setUserEmail] = useState<string>('');
 
   const {
     register,
@@ -72,8 +76,7 @@ export default function SignupPage() {
       setIsLoading(true);
       setError(null);
 
-      // Note: companyName will be available in user object after signup
-      // Better Auth will pass it through via the form data
+      // Create account
       const result = await authClient.signUp.email({
         name: data.name,
         email: data.email,
@@ -86,15 +89,88 @@ export default function SignupPage() {
         return;
       }
 
-      // Redirect to dashboard after successful signup
-      router.push('/dashboard');
-      router.refresh();
+      // Store email for OTP verification
+      setUserEmail(data.email);
+
+      // Send OTP for email verification
+      try {
+        await authClient.emailOtp.sendVerificationOtp({
+          email: data.email,
+          type: 'email-verification',
+        });
+
+        toast.success('Verification code sent to your email');
+        setShowOTPVerification(true);
+      } catch (otpError) {
+        console.error('Failed to send OTP:', otpError);
+        setError('Account created but failed to send verification code. Please contact support.');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleVerifyOTP = async (otp: string) => {
+    try {
+      const result = await authClient.emailOtp.verifyEmail({
+        email: userEmail,
+        otp,
+      });
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Invalid verification code');
+      }
+
+      toast.success('Email verified successfully!');
+      
+      // Create organization after email verification
+      try {
+        const orgResponse = await fetch('/api/auth/setup-organization', {
+          method: 'POST',
+          credentials: 'include',
+        });
+
+        const orgData = await orgResponse.json();
+
+        if (!orgData.success) {
+          console.error('Failed to create organization:', orgData.error);
+          toast.error('Email verified but organization setup failed. Please contact support.');
+        }
+      } catch (orgError) {
+        console.error('Organization setup error:', orgError);
+      }
+      
+      // Redirect to dashboard
+      router.push('/dashboard');
+      router.refresh();
+    } catch (err) {
+      throw err; // Re-throw to show error in OTP component
+    }
+  };
+
+  const handleResendOTP = async () => {
+    await authClient.emailOtp.sendVerificationOtp({
+      email: userEmail,
+      type: 'email-verification',
+    });
+    toast.success('New verification code sent');
+  };
+
+  // Show OTP verification screen if needed
+  if (showOTPVerification) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <OTPVerification
+          email={userEmail}
+          onVerify={handleVerifyOTP}
+          onResend={handleResendOTP}
+          isLoading={isLoading}
+        />
+      </div>
+    );
+  }
 
   return (
     <Card>

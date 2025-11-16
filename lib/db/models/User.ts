@@ -45,6 +45,7 @@ export interface IUser extends Document {
   emailVerified: boolean;
   lastLoginAt?: Date;
   loginCount: number;
+  requirePasswordChange?: boolean; // Flag to force password change on first login
   
   // Preferences
   preferences: {
@@ -127,6 +128,7 @@ const UserSchema = new Schema<IUser>(
     emailVerified: { type: Boolean, default: false },
     lastLoginAt: { type: Date },
     loginCount: { type: Number, default: 0 },
+    requirePasswordChange: { type: Boolean, default: false },
     
     preferences: {
       emailNotifications: { type: Boolean, default: true },

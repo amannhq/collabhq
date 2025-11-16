@@ -9,6 +9,7 @@ import type { IMetrics } from '@/lib/db/models/Metrics';
 import { CreatorOverview } from '@/components/creator/CreatorOverview';
 import { CreatorStats } from '@/components/creator/CreatorStats';
 import { RecentActivity } from '@/components/creator/RecentActivity';
+import { CreatorDashboardWrapper } from '@/components/creator/CreatorDashboardWrapper';
 
 interface CreatorDashboardPageProps {
   params: Promise<{
@@ -31,7 +32,7 @@ export default async function CreatorDashboardPage({
   // Get creator
   const creator = await User.findById(resolvedParams.creatorId)
     .populate('organizationId', 'name slug')
-    .select('role name email avatar creatorProfile organizationId')
+    .select('role name email avatar creatorProfile organizationId requirePasswordChange')
     .lean() as unknown as IUser | null;
 
   if (!creator || creator.role !== 'creator') {
@@ -164,32 +165,34 @@ export default async function CreatorDashboardPage({
   }));
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Welcome back, {creator.name}! 👋
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Here&apos;s an overview of your content performance
-        </p>
+    <CreatorDashboardWrapper requirePasswordChange={creator.requirePasswordChange || false}>
+      <div className="space-y-6">
+        {/* Welcome Section */}
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Welcome back, {creator.name}! 👋
+          </h1>
+          <p className="text-muted-foreground mt-2">
+            Here&apos;s an overview of your content performance
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <CreatorStats stats={stats} />
+
+        {/* Overview Section */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Recent Posts */}
+          <CreatorOverview
+            creator={creatorData}
+            recentPosts={formattedPosts}
+            creatorId={resolvedParams.creatorId}
+          />
+
+          {/* Recent Activity */}
+          <RecentActivity activities={recentActivity} />
+        </div>
       </div>
-
-      {/* Stats Cards */}
-      <CreatorStats stats={stats} />
-
-      {/* Overview Section */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Recent Posts */}
-                <CreatorOverview
-          creator={creatorData}
-          recentPosts={formattedPosts}
-          creatorId={resolvedParams.creatorId}
-        />
-
-        {/* Recent Activity */}
-        <RecentActivity activities={recentActivity} />
-      </div>
-    </div>
+    </CreatorDashboardWrapper>
   );
 }

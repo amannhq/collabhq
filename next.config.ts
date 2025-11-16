@@ -12,6 +12,18 @@ const nextConfig: NextConfig = {
     'pino-abstract-transport',
   ],
   
+  // Image optimization configuration
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
+  
   // Turbopack configuration (Next.js 16+ default bundler)
   turbopack: {
     // Empty config to acknowledge we're using Turbopack

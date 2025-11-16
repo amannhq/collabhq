@@ -500,7 +500,6 @@
 - Real-time notification updates
 - Real-time post approval updates
 - Real-time metrics updates
-- Connection status indicator
 - Auto-reconnect logic
 
 **Files to Create:**
