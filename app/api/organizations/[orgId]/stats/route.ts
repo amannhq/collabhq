@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import { Organization, Project, Post, User, type IOrganization } from '@/lib/db/models';
-import { requireAuth } from '@/lib/auth';
+import { getSession } from '@/lib/auth/auth-utils';
 import { createLogger } from '@/lib/utils/logger';
 
 const logger = createLogger('org-stats-api');
@@ -12,7 +12,7 @@ export async function GET(
 ) {
   try {
     await connectDB();
-    const session = await requireAuth();
+    const session = await getSession();
 
     if (!session?.user) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function GET(
       );
     }
 
-    // Get all statistics
+    // Get all statistics in parallel
     const [
       totalProjects,
       activeProjects,
@@ -48,7 +48,7 @@ export async function GET(
       totalPosts,
       approvedPosts,
       pendingPosts,
-      rejectedPosts,
+      recentPosts,
     ] = await Promise.all([
       Project.countDocuments({ organizationId: orgId }),
       Project.countDocuments({ organizationId: orgId, status: 'active' }),
@@ -61,7 +61,12 @@ export async function GET(
       Post.countDocuments({ organizationId: orgId }),
       Post.countDocuments({ organizationId: orgId, status: 'approved' }),
       Post.countDocuments({ organizationId: orgId, status: 'pending' }),
-      Post.countDocuments({ organizationId: orgId, status: 'rejected' }),
+      Post.find({ organizationId: orgId })
+        .sort({ createdAt: -1 })
+        .limit(5)
+        .populate('creatorId', 'name email')
+        .populate('projectId', 'name')
+        .lean(),
     ]);
 
     // Calculate engagement
@@ -81,45 +86,52 @@ export async function GET(
       return sum + (post.latestMetrics?.impressions || 0);
     }, 0);
 
+    // Calculate growth data for charts (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const chartData = await Post.aggregate([
+      {
+        $match: {
+          organizationId: organization._id,
+          status: 'approved',
+          createdAt: { $gte: sevenDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 },
+          likes: { $sum: '$latestMetrics.likes' },
+          retweets: { $sum: '$latestMetrics.retweets' },
+          replies: { $sum: '$latestMetrics.replies' },
+          impressions: { $sum: '$latestMetrics.impressions' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
     const stats = {
-      projects: {
-        total: totalProjects,
-        active: activeProjects,
-        completed: await Project.countDocuments({ organizationId: orgId, status: 'completed' }),
-        archived: await Project.countDocuments({ organizationId: orgId, status: 'archived' }),
-      },
-      creators: {
-        total: totalCreators,
-        active: activeCreators,
-        invited: await User.countDocuments({
-          organizationId: orgId,
-          role: 'creator',
-          'creatorProfile.status': 'invited',
-        }),
-        suspended: await User.countDocuments({
-          organizationId: orgId,
-          role: 'creator',
-          'creatorProfile.status': 'suspended',
-        }),
-      },
-      posts: {
-        total: totalPosts,
-        approved: approvedPosts,
-        pending: pendingPosts,
-        rejected: rejectedPosts,
-      },
-      engagement: {
-        total: totalEngagement,
-        impressions: totalImpressions,
-        averagePerPost: approvedPosts > 0 ? Math.round(totalEngagement / approvedPosts) : 0,
-      },
+      totalProjects,
+      activeProjects,
+      totalCreators,
+      activeCreators,
+      totalPosts,
+      approvedPosts,
+      pendingPosts,
+      totalEngagement,
+      totalImpressions,
     };
 
     logger.info({ orgId, userId: session.user.id }, 'Organization stats fetched');
 
     return NextResponse.json({
       success: true,
-      data: stats,
+      data: {
+        stats,
+        recentPosts,
+        chartData,
+      },
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching organization stats');

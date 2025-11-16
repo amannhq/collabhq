@@ -3,6 +3,7 @@
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Header } from '@/components/layout/Header';
 import { SidebarProvider } from '@/components/ui/sidebar';
+import { SWRProvider } from '@/components/providers/SWRProvider';
 import type { IOrganization } from '@/lib/db/models/Organization';
 
 interface ClientLayoutProps {
@@ -50,7 +51,9 @@ export function ClientLayout({
         />
         <main className="flex-1 overflow-y-auto bg-background">
           <div className="p-4 lg:p-6">
-            {children}
+            <SWRProvider>
+              {children}
+            </SWRProvider>
           </div>
         </main>
       </div>
