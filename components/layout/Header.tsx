@@ -1,19 +1,21 @@
 'use client';
 
-import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Menu } from 'lucide-react';
 import { AdminSidebar } from './AdminSidebar';
+import { NotificationBell } from '@/components/notifications';
 
 interface HeaderProps {
   orgSlug: string;
   orgName: string;
   userName?: string;
   userEmail?: string;
+  userId?: string;
+  organizationId?: string;
 }
 
-export function Header({ orgSlug, orgName, userName, userEmail }: HeaderProps) {
+export function Header({ orgSlug, orgName, userName, userEmail, userId, organizationId }: HeaderProps) {
   return (
     <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-6 lg:hidden">
       {/* Mobile Menu */}
@@ -40,13 +42,9 @@ export function Header({ orgSlug, orgName, userName, userEmail }: HeaderProps) {
       </div>
 
       {/* Notifications */}
-      <Button variant="outline" size="icon" className="relative">
-        <Bell className="h-5 w-5" />
-        <span className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-medium text-white">
-          3
-        </span>
-        <span className="sr-only">View notifications</span>
-      </Button>
+      {userId && organizationId && (
+        <NotificationBell userId={userId} organizationId={organizationId} />
+      )}
     </header>
   );
 }

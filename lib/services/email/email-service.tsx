@@ -249,12 +249,16 @@ export async function sendWelcomeEmail({
   name,
   organizationId,
   organizationName,
+  projectName,
+  temporaryPassword,
   dashboardUrl,
 }: {
   email: string;
   name: string;
   organizationId: string;
   organizationName: string;
+  projectName?: string;
+  temporaryPassword?: string;
   dashboardUrl: string;
 }) {
   // Get template with branding
@@ -271,6 +275,8 @@ export async function sendWelcomeEmail({
     const variables = {
       name,
       organizationName,
+      projectName: projectName || '',
+      temporaryPassword: temporaryPassword || '',
       dashboardUrl,
     };
 
@@ -305,6 +311,8 @@ export async function sendWelcomeEmail({
       <WelcomeEmail
         name={name}
         organizationName={organizationName}
+        projectName={projectName}
+        temporaryPassword={temporaryPassword || 'temp-password'}
         dashboardUrl={dashboardUrl}
         branding={branding}
       />

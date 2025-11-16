@@ -26,12 +26,15 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from '@/components/notifications';
 
 interface AdminSidebarProps {
   orgSlug: string;
   orgName: string;
   userName?: string;
   userEmail?: string;
+  userId?: string;
+  organizationId?: string;
 }
 
 const navigation = [
@@ -67,7 +70,7 @@ const navigation = [
   },
 ];
 
-export function AdminSidebar({ orgSlug, orgName, userName, userEmail }: AdminSidebarProps) {
+export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, organizationId }: AdminSidebarProps) {
   const pathname = usePathname();
   const { open, toggleSidebar } = useSidebar();
 
@@ -117,16 +120,23 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail }: AdminSid
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          {open && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7"
-              onClick={toggleSidebar}
-            >
-              <PanelLeft className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {userId && organizationId && (
+              <div className="hidden lg:block">
+                <NotificationBell userId={userId} organizationId={organizationId} />
+              </div>
+            )}
+            {open && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={toggleSidebar}
+              >
+                <PanelLeft className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </SidebarHeader>
 
