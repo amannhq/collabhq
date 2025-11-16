@@ -1,0 +1,17 @@
+{
+  "name": "Collab - Creator Management Platform",
+  "short_name": "Collab",
+  "description": "Manage creator partnerships, track performance metrics, and streamline collaboration",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f1ea",
+  "theme_color": "#18181B",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
