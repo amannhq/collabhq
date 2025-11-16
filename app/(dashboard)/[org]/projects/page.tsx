@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/auth-utils';
-import connectDB from '@/lib/db/mongodb';
-import { Organization } from '@/lib/db/models';
-import type { IOrganization } from '@/lib/db/models/Organization';
+import { getCachedOrganizationAccess } from '@/lib/auth/org-verification';
 import { ProjectsClient } from './ProjectsClient';
 
 interface PageProps {
@@ -19,20 +17,15 @@ export default async function ProjectsPage({ params }: PageProps) {
     redirect('/login');
   }
 
-  // Only fetch organization ID - client will handle data fetching
-  await connectDB();
-  const organization = await Organization.findOne({ slug: resolvedParams.org })
-    .select('_id ownerId')
-    .lean<IOrganization>();
+  // Use cached organization verification (5 min cache)
+  const orgAccess = await getCachedOrganizationAccess(
+    resolvedParams.org,
+    session.user.id
+  );
 
-  if (!organization) {
+  if (!orgAccess || !orgAccess.isOwner) {
     redirect('/');
   }
 
-  // Verify ownership
-  if (organization.ownerId.toString() !== session.user.id) {
-    redirect('/');
-  }
-
-  return <ProjectsClient organizationId={organization._id.toString()} orgSlug={resolvedParams.org} />;
+  return <ProjectsClient organizationId={orgAccess.organizationId} orgSlug={resolvedParams.org} />;
 }

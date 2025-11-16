@@ -125,14 +125,21 @@ export async function GET(
 
     logger.info({ orgId, userId: session.user.id }, 'Organization stats fetched');
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        stats,
-        recentPosts,
-        chartData,
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          stats,
+          recentPosts,
+          chartData,
+        },
       },
-    });
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120',
+        },
+      }
+    );
   } catch (error) {
     logger.error({ error }, 'Error fetching organization stats');
     return NextResponse.json(

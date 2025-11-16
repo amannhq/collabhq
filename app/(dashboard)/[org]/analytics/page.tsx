@@ -1,8 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/auth-utils';
-import connectDB from '@/lib/db/mongodb';
-import { Organization } from '@/lib/db/models';
-import type { IOrganization } from '@/lib/db/models/Organization';
+import { getCachedOrganizationAccess } from '@/lib/auth/org-verification';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
 
 interface AnalyticsPageProps {
@@ -19,18 +17,10 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
 
   const { org: orgSlug } = await params;
 
-  // Only fetch organization ID - AnalyticsDashboard handles data fetching
-  await connectDB();
-  const organization = await Organization.findOne({ slug: orgSlug })
-    .select('_id ownerId')
-    .lean<IOrganization>();
+  // Use cached organization verification (5 min cache)
+  const orgAccess = await getCachedOrganizationAccess(orgSlug, session.user.id);
 
-  if (!organization) {
-    redirect('/');
-  }
-
-  // Verify ownership
-  if (organization.ownerId.toString() !== session.user.id) {
+  if (!orgAccess || !orgAccess.isOwner) {
     redirect('/');
   }
 
@@ -45,7 +35,7 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
         </div>
       </div>
 
-      <AnalyticsDashboard organizationId={organization._id.toString()} />
+      <AnalyticsDashboard organizationId={orgAccess.organizationId} />
     </div>
   );
 }

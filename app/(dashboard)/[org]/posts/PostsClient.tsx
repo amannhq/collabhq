@@ -58,7 +58,12 @@ export function PostsClient({ organizationId, orgSlug, initialStatus = 'all' }: 
     success: boolean;
     data: PostsData;
     error?: string;
-  }>(`/api/posts/stats?orgId=${organizationId}&status=${currentStatus}`, fetcher);
+  }>(`/api/posts/stats?orgId=${organizationId}&status=${currentStatus}`, fetcher, {
+    dedupingInterval: 15000, // 15 seconds - posts change more frequently
+    refreshInterval: 120000, // Auto-refresh every 2 minutes
+    revalidateIfStale: true,
+    keepPreviousData: true,
+  });
 
   if (error) {
     return (

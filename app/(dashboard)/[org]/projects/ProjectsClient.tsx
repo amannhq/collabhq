@@ -64,7 +64,11 @@ export function ProjectsClient({ organizationId, orgSlug }: ProjectsClientProps)
     success: boolean;
     data: Project[];
     error?: string;
-  }>(`/api/projects?orgId=${organizationId}`, fetcher);
+  }>(`/api/projects?orgId=${organizationId}`, fetcher, {
+    dedupingInterval: 20000, // 20 seconds - project list changes infrequently
+    revalidateIfStale: true,
+    keepPreviousData: true,
+  });
 
   if (error) {
     return (

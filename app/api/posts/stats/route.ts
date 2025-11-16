@@ -102,7 +102,13 @@ export async function GET(request: NextRequest) {
           total: totalCount,
         },
       },
-    });
+    },
+    {
+      headers: {
+        'Cache-Control': 'public, s-maxage=15, stale-while-revalidate=30',
+      },
+    }
+    );
   } catch (error) {
     logger.error({ error }, 'Error fetching posts stats');
     return NextResponse.json(

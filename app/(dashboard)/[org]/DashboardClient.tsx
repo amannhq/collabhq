@@ -57,7 +57,14 @@ interface DashboardData {
 export function DashboardClient({ organizationId }: { organizationId: string }) {
   const params = useParams();
   const { data, error, isLoading } = useSWR<{ success: boolean; data: DashboardData }>(
-    `/api/organizations/${organizationId}/stats`
+    `/api/organizations/${organizationId}/stats`,
+    {
+      revalidateOnMount: true, // Always fetch on mount
+      dedupingInterval: 30000, // 30 seconds - dashboard data doesn't change often
+      refreshInterval: 60000, // Auto-refresh every 60 seconds
+      revalidateIfStale: true,
+      keepPreviousData: true, // Show old data while loading new
+    }
   );
 
   if (isLoading) {

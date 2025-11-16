@@ -112,10 +112,17 @@ export async function GET(request: NextRequest) {
       'Fetched creators list'
     );
 
-    return NextResponse.json({
-      success: true,
-      data: filteredCreators,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: filteredCreators,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=40',
+        },
+      }
+    );
   } catch (error) {
     logger.error({ error }, 'Error fetching creators');
     return NextResponse.json(

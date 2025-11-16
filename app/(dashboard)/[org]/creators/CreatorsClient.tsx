@@ -80,7 +80,11 @@ export function CreatorsClient({
     success: boolean;
     data: Creator[];
     error?: string;
-  }>(`/api/creators?${queryParams.toString()}`, fetcher);
+  }>(`/api/creators?${queryParams.toString()}`, fetcher, {
+    dedupingInterval: 20000, // 20 seconds - creator list changes infrequently
+    revalidateIfStale: true,
+    keepPreviousData: true,
+  });
 
   if (error) {
     return (

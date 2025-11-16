@@ -175,10 +175,17 @@ export async function GET(request: NextRequest) {
 
     logger.info({ orgId: organizationId, count: formattedProjects.length }, 'Fetched projects');
 
-    return NextResponse.json({
-      success: true,
-      data: formattedProjects,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        data: formattedProjects,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=40',
+        },
+      }
+    );
   } catch (error) {
     logger.error({ error }, 'Error fetching projects');
     return NextResponse.json(
