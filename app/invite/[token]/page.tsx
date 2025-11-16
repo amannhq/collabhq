@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import connectDB from '@/lib/db/mongodb';
 import Invitation from '@/lib/db/models/Invitation';
 import { AcceptInvitation } from '@/components/auth/AcceptInvitation';
@@ -52,12 +53,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <p className="text-muted-foreground mb-6">
             This invitation link is invalid or has expired.
           </p>
-          <a
+          <Link
             href="/"
             className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
           >
             Go to Homepage
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -95,12 +96,12 @@ export default async function InvitePage({ params }: InvitePageProps) {
             <span className="font-medium">{invitationDoc.invitedBy.name}</span> to
             send a new invitation.
           </p>
-          <a
+          <Link
             href="/"
             className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
           >
             Go to Homepage
-          </a>
+          </Link>
         </div>
       </div>
     );

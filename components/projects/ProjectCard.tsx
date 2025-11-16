@@ -31,30 +31,35 @@ interface ProjectCardProps {
 }
 
 export function ProjectCard({ project, orgSlug }: ProjectCardProps) {
-  const statusColors: Record<string, string> = {
-    active: 'bg-green-500',
-    paused: 'bg-yellow-500',
-    completed: 'bg-blue-500',
-    archived: 'bg-gray-500',
+  const statusConfig: Record<string, { color: string; bg: string }> = {
+    active: { color: 'text-green-700', bg: 'bg-green-100' },
+    paused: { color: 'text-yellow-700', bg: 'bg-yellow-100' },
+    completed: { color: 'text-blue-700', bg: 'bg-blue-100' },
+    archived: { color: 'text-gray-700', bg: 'bg-gray-100' },
   };
 
+  const config = statusConfig[project.status] || statusConfig.active;
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2">
-              <FolderKanban className="h-5 w-5" />
-              {project.name}
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1 space-y-1 min-w-0">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FolderKanban className="h-4 w-4 flex-shrink-0" />
+              <span className="truncate">{project.name}</span>
             </CardTitle>
             {project.description && (
-              <CardDescription>{project.description}</CardDescription>
+              <CardDescription className="line-clamp-2 text-sm">
+                {project.description}
+              </CardDescription>
             )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0">
                 <MoreVertical className="h-4 w-4" />
+                <span className="sr-only">Open menu</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
@@ -77,33 +82,47 @@ export function ProjectCard({ project, orgSlug }: ProjectCardProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <div className="flex items-center gap-2 mt-2">
-          <Badge className={statusColors[project.status] || 'bg-gray-500'}>
+      </CardHeader>
+
+      <CardContent className="pb-3">
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <Badge 
+            variant="secondary" 
+            className={`${config.bg} ${config.color} border-0 capitalize`}
+          >
             {project.status}
           </Badge>
           {project.settings?.requirePostApproval && (
-            <Badge variant="outline">Requires Approval</Badge>
+            <Badge variant="outline" className="text-xs">
+              Requires Approval
+            </Badge>
           )}
           {project.settings?.autoReminders && (
-            <Badge variant="outline">Auto Reminders</Badge>
+            <Badge variant="outline" className="text-xs">
+              Auto Reminders
+            </Badge>
           )}
         </div>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 text-sm">
             <Users className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{project.creatorCount || 0}</span>
-            <span className="text-muted-foreground">Creators</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-semibold text-foreground">{project.creatorCount || 0}</span>
+              <span className="text-muted-foreground">Creators</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 text-sm">
             <FileText className="h-4 w-4 text-muted-foreground" />
-            <span className="font-medium">{project.postCount || 0}</span>
-            <span className="text-muted-foreground">Posts</span>
+            <div className="flex items-baseline gap-1">
+              <span className="font-semibold text-foreground">{project.postCount || 0}</span>
+              <span className="text-muted-foreground">Posts</span>
+            </div>
           </div>
         </div>
       </CardContent>
-      <CardFooter>
+
+      <CardFooter className="pt-3">
         <Link href={`/${orgSlug}/projects/${project._id}`} className="w-full">
           <Button variant="outline" className="w-full">
             View Project

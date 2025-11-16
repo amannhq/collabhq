@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Notification from '@/lib/db/models/Notification';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import mongoose from 'mongoose';
 
-export async function PATCH(request: NextRequest) {
+export async function POST() {
   try {
     await connectDB();
 

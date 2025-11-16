@@ -13,14 +13,25 @@ import { Badge } from '@/components/ui/badge';
 
 interface NotificationBellProps {
   userId: string;
-  organizationId: string;
 }
 
-export function NotificationBell({ userId, organizationId }: NotificationBellProps) {
+export function NotificationBell({ userId }: NotificationBellProps) {
   const [unreadCount, setUnreadCount] = useState(0);
-  const [open, setOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const response = await fetch(`/api/notifications?status=unread&count=true`);
+        if (response.ok) {
+          const { data } = await response.json();
+          setUnreadCount(data.count || 0);
+        }
+      } catch (error) {
+        console.error('Failed to fetch unread count:', error);
+      }
+    };
+
     // Fetch initial unread count
     fetchUnreadCount();
 
@@ -29,18 +40,6 @@ export function NotificationBell({ userId, organizationId }: NotificationBellPro
 
     return () => clearInterval(interval);
   }, [userId]);
-
-  const fetchUnreadCount = async () => {
-    try {
-      const response = await fetch(`/api/notifications?status=unread&count=true`);
-      if (response.ok) {
-        const { data } = await response.json();
-        setUnreadCount(data.count || 0);
-      }
-    } catch (error) {
-      console.error('Failed to fetch unread count:', error);
-    }
-  };
 
   const handleNotificationRead = () => {
     // Decrease count when notification is marked as read
@@ -52,7 +51,7 @@ export function NotificationBell({ userId, organizationId }: NotificationBellPro
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="relative" aria-label="Notifications">
           <Bell className="h-5 w-5" />
@@ -69,8 +68,6 @@ export function NotificationBell({ userId, organizationId }: NotificationBellPro
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end" aria-label="Notification Center">
         <NotificationList
-          userId={userId}
-          organizationId={organizationId}
           onNotificationRead={handleNotificationRead}
           onMarkAllRead={handleMarkAllRead}
         />

@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
     const startDate = fromParam ? new Date(fromParam) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = toParam ? new Date(toParam) : new Date();
 
-    let data: any;
+    let data: unknown;
 
     // Handle specific chart data requests
     if (type === 'engagement-timeline') {
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function getEngagementTimeline(orgId: any, startDate: Date, endDate: Date) {
+async function getEngagementTimeline(orgId: unknown, startDate: Date, endDate: Date) {
   const metrics = await Metrics.aggregate([
     {
       $match: {
@@ -120,7 +120,7 @@ async function getEngagementTimeline(orgId: any, startDate: Date, endDate: Date)
   return metrics;
 }
 
-async function getPostsByProject(orgId: any, startDate: Date, endDate: Date) {
+async function getPostsByProject(orgId: unknown, startDate: Date, endDate: Date) {
   const posts = await Post.aggregate([
     {
       $match: {
@@ -159,7 +159,12 @@ async function getPostsByProject(orgId: any, startDate: Date, endDate: Date) {
   return posts;
 }
 
-async function getTopCreators(orgId: any, startDate: Date, endDate: Date, sortBy: string) {
+async function getTopCreators(
+  orgId: unknown,
+  startDate: Date,
+  endDate: Date,
+  sortBy: string
+) {
   const matchStage = {
     $match: {
       organizationId: orgId,
@@ -209,7 +214,7 @@ async function getTopCreators(orgId: any, startDate: Date, endDate: Date, sortBy
   return creators;
 }
 
-async function getGrowthTrends(orgId: any, startDate: Date, endDate: Date) {
+async function getGrowthTrends(orgId: unknown, startDate: Date, endDate: Date) {
   const trends = await Post.aggregate([
     {
       $match: {
@@ -251,7 +256,7 @@ async function getGrowthTrends(orgId: any, startDate: Date, endDate: Date) {
   return trends;
 }
 
-async function getSummaryMetrics(orgId: any, startDate: Date, endDate: Date) {
+async function getSummaryMetrics(orgId: unknown, startDate: Date, endDate: Date) {
   // Get current period posts
   const currentPosts = await Post.find({
     organizationId: orgId,

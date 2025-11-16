@@ -42,8 +42,8 @@ export function Header({ orgSlug, orgName, userName, userEmail, userId, organiza
       </div>
 
       {/* Notifications */}
-      {userId && organizationId && (
-        <NotificationBell userId={userId} organizationId={organizationId} />
+      {userId && (
+        <NotificationBell userId={userId} />
       )}
     </header>
   );

@@ -31,7 +31,10 @@ import { toast } from 'sonner';
 const inviteSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   email: z.string().email('Invalid email address'),
-  twitterHandle: z.string().optional(),
+  twitterHandle: z.string().min(1, 'Twitter handle is required').regex(
+    /^@?[\w]+$/,
+    'Invalid Twitter handle format'
+  ),
   projectId: z.string().min(1, 'Please select a project'),
   message: z.string().max(500).optional(),
 });
@@ -145,12 +148,12 @@ export function InviteCreatorForm({
                   name="twitterHandle"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Twitter Handle</FormLabel>
+                      <FormLabel>Twitter Handle *</FormLabel>
                       <FormControl>
                         <Input placeholder="johndoe" {...field} />
                       </FormControl>
                       <FormDescription>
-                        Without the @ symbol (optional)
+                        Without the @ symbol (required)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

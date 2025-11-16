@@ -65,9 +65,19 @@ async function getProjectsData(orgSlug: string) {
 
   return {
     organization,
-    projects: projects.map((p: IProject) => ({
-      ...p,
+    projects: projects.map((p) => ({
       _id: p._id.toString(),
+      organizationId: p.organizationId.toString(),
+      name: p.name,
+      description: p.description,
+      status: p.status,
+      settings: p.settings,
+      stats: p.stats,
+      createdBy: p.createdBy.toString(),
+      createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
+      updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : p.updatedAt,
+      creatorCount: p.creatorCount || 0,
+      postCount: p.postCount || 0,
     })),
   };
 }

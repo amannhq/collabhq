@@ -102,9 +102,9 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
         <div className="mx-auto mb-4 w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
           <Mail className="w-8 h-8 text-primary" />
         </div>
-        <CardTitle className="text-2xl">You've Been Invited!</CardTitle>
+        <CardTitle className="text-2xl">You&apos;ve Been Invited!</CardTitle>
         <CardDescription>
-          Join <span className="font-medium">{invitation.organizationName}</span> as a creator
+          You&apos;re being invited to join <strong>{invitation.organizationName}</strong>
         </CardDescription>
       </CardHeader>
 
@@ -152,7 +152,7 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
                 <p className="text-sm font-medium">Message from {invitation.inviterName}</p>
                 <div className="p-4 rounded-lg bg-muted/50 border-l-4 border-primary">
                   <p className="text-sm text-muted-foreground italic">
-                    "{invitation.customMessage}"
+                    &quot;{invitation.customMessage}&quot;
                   </p>
                 </div>
               </div>
@@ -172,7 +172,7 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <span>You'll be added to the {invitation.projectName} project</span>
+              <span>You&apos;ll be added to the {invitation.projectName} project</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
@@ -180,7 +180,7 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
               <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
-              <span>You'll receive login credentials via email</span>
+              <span>You&apos;ll receive login credentials via email</span>
             </li>
           </ul>
         </div>

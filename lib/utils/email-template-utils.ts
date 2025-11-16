@@ -23,7 +23,13 @@ interface DefaultTemplateConfig {
     ctaUrl: string;
     footerText: string;
   };
-  variables: string[];
+  variables: Array<{
+    key: string;
+    label: string;
+    description: string;
+    required: boolean;
+    example: string;
+  }>;
   isActive: boolean;
   isDefault: boolean;
 }
@@ -45,7 +51,13 @@ const DEFAULT_TEMPLATES: DefaultTemplateConfig[] = [
       ctaUrl: '{{inviteUrl}}',
       footerText: "If you didn't expect this invitation, you can safely ignore this email.",
     },
-    variables: ['name', 'email', 'organizationName', 'projectName', 'inviteUrl'],
+    variables: [
+      { key: 'name', label: 'Creator Name', description: 'The name of the invited creator', required: true, example: 'John Doe' },
+      { key: 'email', label: 'Email Address', description: 'The email address of the creator', required: true, example: 'john@example.com' },
+      { key: 'organizationName', label: 'Organization Name', description: 'The name of the organization', required: true, example: 'Acme Corp' },
+      { key: 'projectName', label: 'Project Name', description: 'The name of the project', required: true, example: 'Marketing Campaign' },
+      { key: 'inviteUrl', label: 'Invitation URL', description: 'The unique invitation link', required: true, example: 'https://app.com/invite/abc123' },
+    ],
     isActive: true,
     isDefault: true,
   },
@@ -71,7 +83,12 @@ const DEFAULT_TEMPLATES: DefaultTemplateConfig[] = [
       ctaUrl: '{{dashboardUrl}}',
       footerText: 'Need help getting started? Feel free to reach out to your team admin.',
     },
-    variables: ['name', 'email', 'organizationName', 'dashboardUrl'],
+    variables: [
+      { key: 'name', label: 'Creator Name', description: 'The name of the creator', required: true, example: 'John Doe' },
+      { key: 'email', label: 'Email Address', description: 'The email address of the creator', required: true, example: 'john@example.com' },
+      { key: 'organizationName', label: 'Organization Name', description: 'The name of the organization', required: true, example: 'Acme Corp' },
+      { key: 'dashboardUrl', label: 'Dashboard URL', description: 'The URL to the creator dashboard', required: true, example: 'https://app.com/dashboard' },
+    ],
     isActive: true,
     isDefault: true,
   },
@@ -91,7 +108,12 @@ const DEFAULT_TEMPLATES: DefaultTemplateConfig[] = [
       ctaUrl: '{{dashboardUrl}}',
       footerText: 'You can adjust your notification preferences in your account settings.',
     },
-    variables: ['name', 'email', 'organizationName', 'dashboardUrl'],
+    variables: [
+      { key: 'name', label: 'Creator Name', description: 'The name of the creator', required: true, example: 'John Doe' },
+      { key: 'email', label: 'Email Address', description: 'The email address of the creator', required: true, example: 'john@example.com' },
+      { key: 'organizationName', label: 'Organization Name', description: 'The name of the organization', required: true, example: 'Acme Corp' },
+      { key: 'dashboardUrl', label: 'Dashboard URL', description: 'The URL to the creator dashboard', required: true, example: 'https://app.com/dashboard' },
+    ],
     isActive: true,
     isDefault: true,
   },

@@ -31,6 +31,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // twitterHandle is required by the model
+    if (!twitterHandle) {
+      return NextResponse.json(
+        { success: false, error: 'Twitter handle is required' },
+        { status: 400 }
+      );
+    }
+
     // Check if user with this email already exists
     const existingUser = await User.findOne({ email, organizationId });
     if (existingUser) {
@@ -58,21 +66,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get current user ID for invitedBy field
+    const currentUser = await User.findOne({ 
+      email: session.user.email,
+      organizationId 
+    });
+    
+    if (!currentUser) {
+      logger.error({ email: session.user.email }, 'Current user not found');
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
     // Generate invitation token
     const token = randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-    // Create invitation
+    // Create invitation with correct structure matching the model
     const invitation = await Invitation.create({
       organizationId,
       projectId,
       email,
-      name,
-      twitterHandle,
-      message,
+      invitedBy: currentUser._id, // REQUIRED field
+      creatorData: {
+        name,
+        twitterHandle: twitterHandle.startsWith('@') ? twitterHandle.substring(1) : twitterHandle,
+        role: 'creator',
+        customMessage: message,
+      },
       token,
       expiresAt,
       status: 'pending',
+      emailDelivery: {
+        sent: false,
+        opens: 0,
+        clicks: 0,
+      },
+      metadata: {
+        inviteType: 'email',
+        source: 'dashboard',
+        reminderCount: 0,
+      },
     });
 
     // Send invitation email

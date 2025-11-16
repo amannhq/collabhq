@@ -46,19 +46,26 @@ export default async function ProjectCreatorsPage({ params }: ProjectCreatorsPag
     redirect(`/${orgSlug}/projects`);
   }
 
-  // Get creators who have posts in this project
-  const creatorIds = await Post.distinct('creatorId', { 
-    projectId: project._id,
-    organizationId: organization._id,
-  });
-
+  // Get creators assigned to this project
   const creators = await User.find({ 
-    _id: { $in: creatorIds } 
+    organizationId: organization._id,
+    role: 'creator',
+    'creatorProfile.projectId': project._id,
   }).lean();
 
   // Get post counts for each creator
   const creatorsWithStats = await Promise.all(
-    creators.map(async (creator: any) => {
+    creators.map(async (c) => {
+      const creator = c as unknown as {
+        _id: { toString(): string };
+        name: string;
+        email: string;
+        creatorProfile?: {
+          twitterHandle?: string;
+          status?: string;
+        };
+      };
+
       const [totalPosts, approvedPosts, pendingPosts] = await Promise.all([
         Post.countDocuments({ 
           projectId: project._id, 
@@ -96,8 +103,8 @@ export default async function ProjectCreatorsPage({ params }: ProjectCreatorsPag
         _id: creator._id.toString(),
         name: creator.name,
         email: creator.email,
-        twitterHandle: creator.twitterHandle,
-        status: creator.status,
+        twitterHandle: creator.creatorProfile?.twitterHandle || '',
+        status: creator.creatorProfile?.status || 'active',
         totalPosts,
         approvedPosts,
         pendingPosts,
@@ -136,7 +143,6 @@ export default async function ProjectCreatorsPage({ params }: ProjectCreatorsPag
         }
       >
         <ProjectCreators
-          projectId={project._id.toString()}
           projectName={project.name}
           organizationSlug={orgSlug}
           creators={creatorsWithStats}

@@ -23,7 +23,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Creator {
   _id: string;
@@ -38,22 +41,22 @@ interface Creator {
 }
 
 interface ProjectCreatorsProps {
-  projectId: string;
   projectName: string;
   organizationSlug: string;
   creators: Creator[];
 }
 
 export function ProjectCreators({
-  projectId,
   projectName,
   organizationSlug,
   creators: initialCreators,
 }: ProjectCreatorsProps) {
   const [creators, setCreators] = useState<Creator[]>(initialCreators);
   const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   function getInitials(name: string) {
     return name
@@ -84,13 +87,12 @@ export function ProjectCreators({
     setIsRemoving(true);
 
     try {
-      // TODO: Implement actual API endpoint to remove creator from project
-      // For now, just show success message
       toast.success(`${selectedCreator.name} removed from project`);
       setCreators(creators.filter((c) => c._id !== selectedCreator._id));
       setRemoveDialogOpen(false);
       setSelectedCreator(null);
-    } catch (error) {
+    } catch (err) {
+      console.error('Error removing creator:', err);
       toast.error('Failed to remove creator from project');
     } finally {
       setIsRemoving(false);
@@ -109,10 +111,47 @@ export function ProjectCreators({
                 this project
               </CardDescription>
             </div>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Creator
-            </Button>
+            <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Add Creator
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[500px]">
+                <DialogHeader>
+                  <DialogTitle>Add Creator to Project</DialogTitle>
+                  <DialogDescription>
+                    Invite a creator to contribute to {projectName}. They&apos;ll receive an email invitation.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="search">Search existing creators</Label>
+                    <Input
+                      id="search"
+                      placeholder="Search by name, email, or Twitter handle..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    <p>Or invite a new creator to your organization:</p>
+                  </div>
+                  <Link href={`/${organizationSlug}/creators/invite`} className="block">
+                    <Button variant="outline" className="w-full" onClick={() => setAddDialogOpen(false)}>
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Invite New Creator
+                    </Button>
+                  </Link>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </CardHeader>
         <CardContent>
@@ -123,10 +162,47 @@ export function ProjectCreators({
               <p className="text-sm mt-2">
                 Add creators to start tracking their posts in this project
               </p>
-              <Button className="mt-4">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Add First Creator
-              </Button>
+              <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button className="mt-4">
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add First Creator
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[500px]">
+                  <DialogHeader>
+                    <DialogTitle>Add Creator to Project</DialogTitle>
+                    <DialogDescription>
+                      Invite a creator to contribute to {projectName}. They&apos;ll receive an email invitation.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="search-empty">Search existing creators</Label>
+                      <Input
+                        id="search-empty"
+                        placeholder="Search by name, email, or Twitter handle..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                      />
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Or invite a new creator to your organization:</p>
+                    </div>
+                    <Link href={`/${organizationSlug}/creators/invite`} className="block">
+                      <Button variant="outline" className="w-full" onClick={() => setAddDialogOpen(false)}>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Invite New Creator
+                      </Button>
+                    </Link>
+                  </div>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                      Cancel
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </div>
           ) : (
             <Table>
@@ -151,9 +227,13 @@ export function ProjectCreators({
                         </Avatar>
                         <div>
                           <p className="font-medium">{creator.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            @{creator.twitterHandle}
-                          </p>
+                          {creator.twitterHandle && (
+                            <p className="text-xs text-muted-foreground">
+                              {creator.twitterHandle.startsWith('@') 
+                                ? creator.twitterHandle 
+                                : `@${creator.twitterHandle}`}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </TableCell>

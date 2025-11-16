@@ -121,9 +121,9 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, or
             </SidebarMenuItem>
           </SidebarMenu>
           <div className="flex items-center gap-1">
-            {userId && organizationId && (
+            {open && userId && (
               <div className="hidden lg:block">
-                <NotificationBell userId={userId} organizationId={organizationId} />
+                <NotificationBell userId={userId} />
               </div>
             )}
             {open && (

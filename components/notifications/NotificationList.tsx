@@ -11,15 +11,11 @@ import type { Notification } from '@/types/notification';
 import { NotificationStatus } from '@/types';
 
 interface NotificationListProps {
-  userId: string;
-  organizationId: string;
   onNotificationRead?: () => void;
   onMarkAllRead?: () => void;
 }
 
 export function NotificationList({
-  userId,
-  organizationId,
   onNotificationRead,
   onMarkAllRead,
 }: NotificationListProps) {
@@ -30,6 +26,7 @@ export function NotificationList({
 
   useEffect(() => {
     fetchNotifications();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const fetchNotifications = async () => {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
-import { Organization, Post, User, Project } from '@/lib/db/models';
+import { Post, Organization } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
 import { requireAuth } from '@/lib/auth';
 import { createLogger } from '@/lib/utils/logger';
@@ -50,7 +50,9 @@ export async function GET(request: NextRequest) {
     }
 
     // Build date filter
-    const dateFilter: any = { organizationId: organization._id };
+    const dateFilter: { organizationId: unknown; createdAt?: { $gte?: Date; $lte?: Date } } = { 
+      organizationId: organization._id 
+    };
     if (fromDate || toDate) {
       dateFilter.createdAt = {};
       if (fromDate) dateFilter.createdAt.$gte = new Date(fromDate);
@@ -109,7 +111,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function generateCSV(posts: any[]): string {
+function generateCSV(posts: unknown[]): string {
   const headers = [
     'Post URL',
     'Creator',
@@ -125,14 +127,29 @@ function generateCSV(posts: any[]): string {
     'Published At',
   ];
 
-  const rows = posts.map((post) => {
+  const rows = posts.map((p) => {
+    const post = p as {
+      postUrl?: string;
+      creatorId?: { name?: string; email?: string };
+      projectId?: { name?: string };
+      status?: string;
+      latestMetrics?: {
+        likes?: number;
+        retweets?: number;
+        replies?: number;
+        impressions?: number;
+      };
+      createdAt?: Date;
+      publishedAt?: Date;
+    };
+
     const creator = post.creatorId;
     const project = post.projectId;
     const metrics = post.latestMetrics || {};
     const engagementRate =
-      metrics.impressions > 0
+      (metrics.impressions || 0) > 0
         ? (((metrics.likes || 0) + (metrics.retweets || 0) + (metrics.replies || 0)) /
-            metrics.impressions) *
+            (metrics.impressions || 1)) *
           100
         : 0;
 
@@ -155,16 +172,26 @@ function generateCSV(posts: any[]): string {
   return [headers.join(','), ...rows].join('\n');
 }
 
-function generatePDFContent(posts: any[], organization: IOrganization): string {
-  const totalPosts = posts.length;
-  const approvedPosts = posts.filter((p) => p.status === 'approved').length;
-  const pendingPosts = posts.filter((p) => p.status === 'pending').length;
-  const rejectedPosts = posts.filter((p) => p.status === 'rejected').length;
+function generatePDFContent(posts: unknown[], organization: { name: string }): string {
+  const typedPosts = posts as Array<{
+    status?: string;
+    latestMetrics?: {
+      likes?: number;
+      retweets?: number;
+      replies?: number;
+      impressions?: number;
+    };
+  }>;
 
-  const totalLikes = posts.reduce((sum, p) => sum + (p.latestMetrics?.likes || 0), 0);
-  const totalRetweets = posts.reduce((sum, p) => sum + (p.latestMetrics?.retweets || 0), 0);
-  const totalReplies = posts.reduce((sum, p) => sum + (p.latestMetrics?.replies || 0), 0);
-  const totalImpressions = posts.reduce(
+  const totalPosts = typedPosts.length;
+  const approvedPosts = typedPosts.filter((p) => p.status === 'approved').length;
+  const pendingPosts = typedPosts.filter((p) => p.status === 'pending').length;
+  const rejectedPosts = typedPosts.filter((p) => p.status === 'rejected').length;
+
+  const totalLikes = typedPosts.reduce((sum, p) => sum + (p.latestMetrics?.likes || 0), 0);
+  const totalRetweets = typedPosts.reduce((sum, p) => sum + (p.latestMetrics?.retweets || 0), 0);
+  const totalReplies = typedPosts.reduce((sum, p) => sum + (p.latestMetrics?.replies || 0), 0);
+  const totalImpressions = typedPosts.reduce(
     (sum, p) => sum + (p.latestMetrics?.impressions || 0),
     0
   );
@@ -200,7 +227,7 @@ Average Engagement Rate: ${avgEngagement.toFixed(2)}%
 
 TOP POSTS BY ENGAGEMENT
 
-${posts
+${typedPosts
   .sort((a, b) => {
     const aMetrics = a.latestMetrics || {};
     const bMetrics = b.latestMetrics || {};
@@ -212,8 +239,8 @@ ${posts
   .map((post, index) => {
     const metrics = post.latestMetrics || {};
     return `
-${index + 1}. ${post.postUrl}
-   Creator: ${post.creatorId?.name || 'N/A'}
+${index + 1}. ${(post as { postUrl?: string }).postUrl || 'N/A'}
+   Creator: ${(post as { creatorId?: { name?: string } }).creatorId?.name || 'N/A'}
    Likes: ${metrics.likes || 0} | Retweets: ${metrics.retweets || 0} | Replies: ${metrics.replies || 0}
    Impressions: ${metrics.impressions || 0}
 `;
