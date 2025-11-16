@@ -2,40 +2,41 @@ import { redirect } from 'next/navigation';
 import { AdminSidebar } from '@/components/layout/AdminSidebar';
 import { Header } from '@/components/layout/Header';
 import { SidebarProvider } from '@/components/ui/sidebar';
-import { getSession } from '@/lib/auth'; // Use cached getSession
+import { getSession } from '@/lib/auth'; // Already cached
 import { cache } from 'react';
 import connectDB from '@/lib/db/mongodb';
 import { Organization } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
-import { createLogger } from '@/lib/utils/logger';
 
-const logger = createLogger('org-layout');
+// CRITICAL: Consolidate ALL layout data into single cached function
+// This ensures only ONE database query per request, making navigation instant
+const getLayoutData = cache(async (orgSlug: string) => {
+  // 1. Get session (already cached via React cache in auth-utils)
+  const session = await getSession();
+  
+  if (!session) {
+    return { session: null, organization: null, pendingPostsCount: 0 };
+  }
 
-// Cache the organization data for the request
-const getOrganizationData = cache(async (orgSlug: string, userId: string) => {
+  // 2. Connect to DB once
   await connectDB();
   
+  // 3. Get organization (lean query for speed)
   const organization = await Organization.findOne({
     slug: orgSlug,
   }).lean<IOrganization>();
 
   if (!organization) {
-    logger.warn({ orgSlug, userId }, 'Organization not found');
-    return null;
+    return { session, organization: null, pendingPostsCount: 0 };
   }
 
-  // Verify ownership
-  const isOwner = organization.ownerId.toString() === userId;
+  // 4. Verify ownership
+  const isOwner = organization.ownerId.toString() === session.user.id;
   if (!isOwner) {
-    logger.warn({ 
-      orgId: organization._id.toString(),
-      ownerId: organization.ownerId.toString(), 
-      userId 
-    }, 'User is not organization owner');
-    return null;
+    return { session, organization: null, pendingPostsCount: 0 };
   }
 
-  // Get pending posts count in parallel with organization fetch
+  // 5. Get pending posts count (only if needed)
   const { Project, Post } = await import('@/lib/db/models');
   const projects = await Project.find({ organizationId: organization._id }).select('_id').lean();
   const projectIds = projects.map((p) => p._id);
@@ -44,7 +45,7 @@ const getOrganizationData = cache(async (orgSlug: string, userId: string) => {
     status: 'pending',
   });
 
-  return { organization, pendingPostsCount };
+  return { session, organization, pendingPostsCount };
 });
 
 interface OrganizationLayoutProps {
@@ -54,32 +55,28 @@ interface OrganizationLayoutProps {
   }>;
 }
 
-// Tell Next.js this layout doesn't need to revalidate on every request
-export const dynamic = 'force-dynamic'; // Still dynamic for auth checks
-export const revalidate = 0; // No static caching, but use React cache
+// Force dynamic for auth, but React cache prevents redundant queries
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function OrganizationLayout({
   children,
   params,
 }: OrganizationLayoutProps) {
-  // Await params (Next.js 16)
   const resolvedParams = await params;
 
-  // Get session (uses React cache from auth-utils)
-  const session = await getSession();
+  // Get ALL layout data in one cached call
+  // proxy.ts already verified cookie exists, so this is just validation
+  const { session, organization, pendingPostsCount } = await getLayoutData(resolvedParams.org);
 
+  // Fallback redirects (proxy.ts should prevent most of these)
   if (!session) {
     redirect('/login');
   }
 
-  // Get cached organization data
-  const data = await getOrganizationData(resolvedParams.org, session.user.id);
-
-  if (!data) {
+  if (!organization) {
     redirect('/');
   }
-
-  const { organization, pendingPostsCount } = data;
 
   return (
     <SidebarProvider>

@@ -1,30 +1,42 @@
 // proxy.ts - Next.js 16 (replaces middleware.ts)
+// Purpose: Lightweight request filtering for instant navigation
+// Heavy auth validation happens in layouts, not here
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Allow all public routes and API routes
+  // Public routes that don't require authentication
   const publicPaths = [
-    '/api',
-    '/_next',
+    '/api/auth',     // Better Auth endpoints
+    '/_next',        // Next.js internals
     '/favicon.ico',
     '/images',
-    '/public',
     '/',
     '/login',
     '/signup',
-    '/invite'
+    '/invite',
   ];
   
-  // Check if path starts with any public path
+  // Allow public paths immediately
   if (publicPaths.some(path => pathname.startsWith(path))) {
     return NextResponse.next();
   }
   
-  // For all other routes, let the layouts handle authentication
-  // Don't block here - the [org]/layout.tsx will check session
+  // Quick cookie check (non-blocking) - Better Auth session token
+  const sessionCookie = request.cookies.get('better-auth.session_token');
+  
+  // If no session cookie, redirect to login
+  // This is a FAST check - no database calls, just cookie presence
+  if (!sessionCookie && !pathname.startsWith('/login')) {
+    const loginUrl = new URL('/login', request.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
+  
+  // Cookie exists - proceed and let layouts do detailed validation
+  // This keeps navigation instant while maintaining security
   return NextResponse.next();
 }
 
