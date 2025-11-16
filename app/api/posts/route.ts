@@ -1,0 +1,230 @@
+import { NextRequest, NextResponse } from 'next/server';
+import connectDB from '@/lib/db/mongodb';
+import { Post, Project } from '@/lib/db/models';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('posts-api');
+
+export async function GET(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const organizationId = searchParams.get('organizationId');
+    const status = searchParams.get('status');
+    const projectId = searchParams.get('projectId');
+    const creatorId = searchParams.get('creatorId');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const skip = (page - 1) * limit;
+
+    if (!organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Organization ID required' },
+        { status: 400 }
+      );
+    }
+
+    // Verify user has access to organization
+    const { Organization } = await import('@/lib/db/models');
+    const organization = await Organization.findById(organizationId);
+
+    if (!organization || organization.ownerId.toString() !== session.user.id) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    // Get all projects for this org
+    const projects = await Project.find({ organizationId }).select('_id');
+    const projectIds = projects.map((p) => p._id);
+
+    // Build query
+    const query: Record<string, unknown> = { projectId: { $in: projectIds } };
+
+    if (status && status !== 'all') {
+      query.status = status;
+    }
+
+    if (projectId) {
+      query.projectId = projectId;
+    }
+
+    if (creatorId) {
+      query.creatorId = creatorId;
+    }
+
+    if (search) {
+      query.$or = [
+        { postUrl: { $regex: search, $options: 'i' } },
+        { caption: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Get posts with pagination
+    const [posts, total] = await Promise.all([
+      Post.find(query)
+        .populate('creatorId', 'name email twitterHandle')
+        .populate('projectId', 'name')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Post.countDocuments(query),
+    ]);
+
+    logger.info(
+      { organizationId, total, page, limit },
+      'Posts fetched successfully'
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        posts,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    logger.error({ error }, 'Error fetching posts');
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    await connectDB();
+
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const body = await request.json();
+    const { projectId, postUrl, caption, metrics } = body;
+
+    if (!projectId || !postUrl) {
+      return NextResponse.json(
+        { success: false, error: 'Project ID and post URL required' },
+        { status: 400 }
+      );
+    }
+
+    // Get project and verify access
+    const project = await Project.findById(projectId).populate('organizationId');
+
+    if (!project) {
+      return NextResponse.json(
+        { success: false, error: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    // Check if user is creator in this project or admin
+    const { User } = await import('@/lib/db/models');
+    const user = await User.findById(session.user.id);
+
+    if (!user) {
+      return NextResponse.json(
+        { success: false, error: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    const isCreator = user.creatorProfile?.projectId?.toString() === projectId;
+    const isAdmin = project.organizationId.ownerId.toString() === session.user.id;
+
+    if (!isCreator && !isAdmin) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden' },
+        { status: 403 }
+      );
+    }
+
+    // Create post
+    const post = await Post.create({
+      projectId,
+      creatorId: session.user.id,
+      postUrl,
+      caption: caption || '',
+      status: project.settings.requirePostApproval ? 'pending' : 'approved',
+      latestMetrics: metrics || {
+        likes: 0,
+        retweets: 0,
+        replies: 0,
+        impressions: 0,
+      },
+    });
+
+    // If metrics provided, create metrics record
+    if (metrics) {
+      const { Metrics } = await import('@/lib/db/models');
+      await Metrics.create({
+        postId: post._id,
+        metrics,
+        recordedAt: new Date(),
+      });
+    }
+
+    // Create notification for admin if pending
+    if (post.status === 'pending') {
+      const { Notification } = await import('@/lib/db/models');
+      await Notification.create({
+        userId: project.organizationId.ownerId,
+        type: 'post_pending',
+        title: 'New Post Pending Approval',
+        message: `${user.name} submitted a new post for ${project.name}`,
+        metadata: {
+          postId: post._id,
+          projectId: project._id,
+          creatorId: session.user.id,
+        },
+      });
+    }
+
+    logger.info(
+      { postId: post._id.toString(), creatorId: session.user.id, projectId },
+      'Post created'
+    );
+
+    return NextResponse.json({
+      success: true,
+      data: post,
+    });
+  } catch (error) {
+    logger.error({ error }, 'Error creating post');
+    return NextResponse.json(
+      { success: false, error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

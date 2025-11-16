@@ -1,0 +1,568 @@
+# ─────────────────────────────────────────────────────────
+# TYPES
+# ─────────────────────────────────────────────────────────
+
+type Organization {
+  id: ID!
+  name: String!
+  slug: String!
+  owner: User!
+  
+  subscription: Subscription!
+  settings: OrganizationSettings!
+  limits: OrganizationLimits!
+  usage: OrganizationUsage!
+  
+  # Relationships
+  projects(
+    status: ProjectStatus
+    limit: Int
+    offset: Int
+    orderBy: ProjectOrderBy
+  ): [Project!]!
+  
+  creators(
+    status: CreatorStatus
+    projectId: ID
+    limit: Int
+    offset: Int
+  ): [User!]!
+  
+  # Analytics
+  analytics(input: AnalyticsInput!): OrganizationAnalytics!
+  
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Project {
+  id: ID!
+  organization: Organization!
+  name: String!
+  description: String
+  status: ProjectStatus!
+  settings: ProjectSettings!
+  stats: ProjectStats!
+  
+  # Relationships
+  creators(
+    status: CreatorStatus
+    limit: Int
+    offset: Int
+  ): [User!]!
+  
+  posts(
+    status: PostStatus
+    creatorId: ID
+    dateRange: DateRangeInput
+    limit: Int
+    offset: Int
+    orderBy: PostOrderBy
+  ): PostConnection!
+  
+  # Analytics
+  analytics(input: AnalyticsInput!): ProjectAnalytics!
+  metricsTimeSeries(input: TimeSeriesInput!): [MetricsDataPoint!]!
+  
+  createdBy: User!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type User {
+  id: ID!
+  email: String!
+  name: String!
+  avatar: String
+  role: UserRole!
+  
+  # For Admins
+  organization: Organization
+  
+  # For Creators
+  creatorProfile: CreatorProfile
+  
+  # Posts (for creators)
+  posts(
+    status: PostStatus
+    dateRange: DateRangeInput
+    limit: Int
+    offset: Int
+    orderBy: PostOrderBy
+  ): PostConnection!
+  
+  # Analytics (for creators)
+  analytics(input: AnalyticsInput!): CreatorAnalytics!
+  metricsTimeSeries(input: TimeSeriesInput!): [MetricsDataPoint!]!
+  
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Post {
+  id: ID!
+  project: Project!
+  creator: User!
+  organization: Organization!
+  
+  postUrl: String!
+  tweetId: String!
+  content: String
+  postedAt: DateTime
+  
+  status: PostStatus!
+  isFirstPost: Boolean!
+  
+  # Verification
+  verifiedBy: User
+  verifiedAt: DateTime
+  adminNotes: String
+  
+  # Latest metrics
+  latestMetrics: MetricSnapshot!
+  growth: MetricGrowth!
+  
+  # Time-series history
+  metricsHistory(
+    dateRange: DateRangeInput
+    limit: Int
+  ): [Metrics!]!
+  
+  # Analytics for this post
+  analytics(input: AnalyticsInput!): PostAnalytics!
+  
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Metrics {
+  id: ID!
+  post: Post!
+  creator: User!
+  project: Project!
+  
+  metrics: MetricSnapshot!
+  growth: MetricGrowth!
+  
+  source: MetricSource!
+  notes: String
+  submittedBy: User!
+  
+  recordedAt: DateTime!
+  createdAt: DateTime!
+}
+
+# ─────────────────────────────────────────────────────────
+# ANALYTICS TYPES (Main focus for GraphQL)
+# ─────────────────────────────────────────────────────────
+
+type OrganizationAnalytics {
+  overview: AnalyticsOverview!
+  
+  # Time-series data for charts
+  metricsOverTime: [MetricsDataPoint!]!
+  engagementTrend: [TrendDataPoint!]!
+  
+  # Breakdown by project
+  byProject: [ProjectPerformance!]!
+  
+  # Breakdown by creator
+  byCreator: [CreatorPerformance!]!
+  
+  # Top performers
+  topPosts(limit: Int): [PostPerformance!]!
+  topCreators(limit: Int): [CreatorPerformance!]!
+  
+  # Comparisons
+  periodComparison: PeriodComparison!
+}
+
+type ProjectAnalytics {
+  overview: AnalyticsOverview!
+  
+  # Time-series
+  metricsOverTime: [MetricsDataPoint!]!
+  engagementTrend: [TrendDataPoint!]!
+  
+  # Creator breakdown
+  byCreator: [CreatorPerformance!]!
+  
+  # Post performance
+  postPerformance: [PostPerformance!]!
+  
+  # Comparisons
+  periodComparison: PeriodComparison!
+}
+
+type CreatorAnalytics {
+  overview: AnalyticsOverview!
+  
+  # Time-series
+  metricsOverTime: [MetricsDataPoint!]!
+  engagementTrend: [TrendDataPoint!]!
+  
+  # Post breakdown
+  postPerformance: [PostPerformance!]!
+  
+  # Best performing content types
+  contentTypeBreakdown: [ContentTypeStats!]!
+  
+  # Posting patterns
+  postingPatterns: PostingPatterns!
+  
+  # Comparisons
+  periodComparison: PeriodComparison!
+  peerComparison: [PeerComparison!]!
+}
+
+type PostAnalytics {
+  overview: AnalyticsOverview!
+  
+  # Growth over time
+  metricsOverTime: [MetricsDataPoint!]!
+  growthRate: GrowthRate!
+  
+  # Performance benchmarks
+  benchmarks: PerformanceBenchmarks!
+  
+  # Predictions (optional)
+  projections: MetricProjections
+}
+
+# ─────────────────────────────────────────────────────────
+# TIME-SERIES DATA TYPES
+# ─────────────────────────────────────────────────────────
+
+type MetricsDataPoint {
+  timestamp: DateTime!
+  date: String!  # "2025-01-15"
+  
+  # Raw metrics
+  likes: Int!
+  retweets: Int!
+  replies: Int!
+  quotes: Int!
+  impressions: Int!
+  bookmarks: Int!
+  views: Int!
+  
+  # Calculated metrics
+  totalEngagement: Int!
+  engagementRate: Float!
+  
+  # Growth (compared to previous point)
+  likesDelta: Int
+  retweetsDelta: Int
+  impressionsDelta: Int
+  engagementRateDelta: Float
+}
+
+type TrendDataPoint {
+  period: String!  # "2025-01-15" or "2025-W03" or "2025-01"
+  value: Float!
+  change: Float!   # Percentage change from previous
+  trend: Trend!    # UP, DOWN, STABLE
+}
+
+type MetricSnapshot {
+  likes: Int!
+  retweets: Int!
+  replies: Int!
+  quotes: Int!
+  impressions: Int!
+  bookmarks: Int!
+  views: Int!
+  totalEngagement: Int!
+  engagementRate: Float!
+  lastUpdatedAt: DateTime!
+}
+
+type MetricGrowth {
+  likesDelta: Int!
+  retweetsDelta: Int!
+  repliesDelta: Int!
+  impressionsDelta: Int!
+  engagementDelta: Int!
+  likesGrowthPercent: Float!
+  retweetsGrowthPercent: Float!
+  impressionsGrowthPercent: Float!
+  hoursSinceLastUpdate: Int
+}
+
+# ─────────────────────────────────────────────────────────
+# PERFORMANCE & COMPARISON TYPES
+# ─────────────────────────────────────────────────────────
+
+type PostPerformance {
+  post: Post!
+  metrics: MetricSnapshot!
+  growth: MetricGrowth!
+  rank: Int
+  percentile: Float
+  isTopPerformer: Boolean!
+}
+
+type CreatorPerformance {
+  creator: User!
+  stats: CreatorStats!
+  avgMetrics: MetricSnapshot!
+  totalEngagement: Int!
+  rank: Int
+  percentile: Float
+  trend: Trend!
+}
+
+type ProjectPerformance {
+  project: Project!
+  stats: ProjectStats!
+  totalEngagement: Int!
+  avgEngagementRate: Float!
+  activeCreators: Int!
+  rank: Int
+}
+
+type PeriodComparison {
+  current: AnalyticsOverview!
+  previous: AnalyticsOverview!
+  change: PeriodChange!
+}
+
+type PeriodChange {
+  postsChange: Int!
+  postsChangePercent: Float!
+  engagementChange: Int!
+  engagementChangePercent: Float!
+  impressionsChange: Int!
+  impressionsChangePercent: Float!
+  trend: Trend!
+}
+
+# ─────────────────────────────────────────────────────────
+# INPUT TYPES
+# ─────────────────────────────────────────────────────────
+
+input AnalyticsInput {
+  dateRange: DateRangeInput!
+  granularity: Granularity  # HOUR, DAY, WEEK, MONTH
+  metrics: [MetricType!]
+  groupBy: GroupBy
+  filters: AnalyticsFilters
+}
+
+input TimeSeriesInput {
+  dateRange: DateRangeInput!
+  interval: Interval!  # HOURLY, DAILY, WEEKLY, MONTHLY
+  metrics: [MetricType!]!
+  fill: FillStrategy  # ZERO, NULL, INTERPOLATE
+}
+
+input DateRangeInput {
+  start: DateTime!
+  end: DateTime!
+  timezone: String
+}
+
+input AnalyticsFilters {
+  creatorIds: [ID!]
+  projectIds: [ID!]
+  postStatus: [PostStatus!]
+  minEngagementRate: Float
+  hasMedia: Boolean
+}
+
+# ─────────────────────────────────────────────────────────
+# ENUMS
+# ─────────────────────────────────────────────────────────
+
+enum Granularity {
+  HOUR
+  DAY
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+}
+
+enum Interval {
+  HOURLY
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum MetricType {
+  LIKES
+  RETWEETS
+  REPLIES
+  QUOTES
+  IMPRESSIONS
+  BOOKMARKS
+  VIEWS
+  TOTAL_ENGAGEMENT
+  ENGAGEMENT_RATE
+}
+
+enum GroupBy {
+  CREATOR
+  PROJECT
+  POST
+  DATE
+  HOUR_OF_DAY
+  DAY_OF_WEEK
+}
+
+enum PostOrderBy {
+  CREATED_AT_DESC
+  CREATED_AT_ASC
+  ENGAGEMENT_DESC
+  ENGAGEMENT_ASC
+  LIKES_DESC
+  IMPRESSIONS_DESC
+}
+
+enum Trend {
+  UP
+  DOWN
+  STABLE
+}
+
+enum FillStrategy {
+  ZERO
+  NULL
+  INTERPOLATE
+  PREVIOUS
+}
+
+# ─────────────────────────────────────────────────────────
+# QUERIES
+# ─────────────────────────────────────────────────────────
+
+type Query {
+  # Organization
+  organization(id: ID, slug: String): Organization
+  myOrganization: Organization!
+  
+  # Projects
+  project(id: ID!): Project
+  projects(organizationId: ID!, status: ProjectStatus): [Project!]!
+  
+  # Creators
+  creator(id: ID!): User
+  creators(
+    organizationId: ID
+    projectId: ID
+    status: CreatorStatus
+  ): [User!]!
+  
+  # Posts
+  post(id: ID!): Post
+  posts(
+    organizationId: ID
+    projectId: ID
+    creatorId: ID
+    status: PostStatus
+    dateRange: DateRangeInput
+    limit: Int
+    offset: Int
+    orderBy: PostOrderBy
+  ): PostConnection!
+  
+  # Analytics (Main GraphQL use case)
+  organizationAnalytics(
+    organizationId: ID!
+    input: AnalyticsInput!
+  ): OrganizationAnalytics!
+  
+  projectAnalytics(
+    projectId: ID!
+    input: AnalyticsInput!
+  ): ProjectAnalytics!
+  
+  creatorAnalytics(
+    creatorId: ID!
+    input: AnalyticsInput!
+  ): CreatorAnalytics!
+  
+  postAnalytics(
+    postId: ID!
+    input: AnalyticsInput!
+  ): PostAnalytics!
+  
+  # Time-series queries
+  metricsTimeSeries(
+    entityId: ID!
+    entityType: EntityType!
+    input: TimeSeriesInput!
+  ): [MetricsDataPoint!]!
+  
+  # Leaderboards
+  topPosts(
+    organizationId: ID
+    projectId: ID
+    dateRange: DateRangeInput!
+    metric: MetricType!
+    limit: Int
+  ): [PostPerformance!]!
+  
+  topCreators(
+    organizationId: ID
+    projectId: ID
+    dateRange: DateRangeInput!
+    metric: MetricType!
+    limit: Int
+  ): [CreatorPerformance!]!
+}
+
+# ─────────────────────────────────────────────────────────
+# MUTATIONS
+# ─────────────────────────────────────────────────────────
+
+type Mutation {
+  # Posts
+  submitPost(input: SubmitPostInput!): Post!
+  updateMetrics(postId: ID!, input: UpdateMetricsInput!): Metrics!
+  
+  # Admin actions (use REST instead)
+  # approvePost, rejectPost, etc. → REST API
+}
+
+# ─────────────────────────────────────────────────────────
+# SUBSCRIPTIONS (Real-time)
+# ─────────────────────────────────────────────────────────
+
+type Subscription {
+  # Real-time metrics updates
+  metricsUpdated(postId: ID!): Metrics!
+  
+  # Organization-wide updates
+  organizationMetricsUpdated(organizationId: ID!): MetricsDataPoint!
+  
+  # Project updates
+  projectMetricsUpdated(projectId: ID!): MetricsDataPoint!
+  
+  # New posts
+  postCreated(projectId: ID!): Post!
+  postStatusChanged(projectId: ID!): Post!
+}
+
+# ─────────────────────────────────────────────────────────
+# CONNECTION TYPES (Pagination)
+# ─────────────────────────────────────────────────────────
+
+type PostConnection {
+  edges: [PostEdge!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type PostEdge {
+  node: Post!
+  cursor: String!
+}
+
+type PageInfo {
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+  endCursor: String
+}

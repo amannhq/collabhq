@@ -1,0 +1,207 @@
+# Authentication Flow Documentation
+
+## Overview
+
+This Creator Tracker SaaS has a three-tier role system:
+
+1. **SaaS Admin** (`saas-admin`) - Platform owner (you)
+2. **Organization Admins** (`admin`) - Your customers who manage their organizations
+3. **Creators** (`creator`) - Content creators invited by organization admins
+
+## Sign-Up Flow
+
+### Organization Sign-Up (For Your Customers)
+
+Organizations can sign up using two methods:
+
+#### 1. Google OAuth Sign-Up
+- Click "Continue with Google"
+- Authenticate with Google account
+- **Email Validation**: Only organization emails allowed (no Gmail, Yahoo, etc.)
+- Automatically creates:
+  - User account with `role: 'admin'`
+  - Organization with auto-generated slug
+  - 14-day free trial
+
+#### 2. Email/Password Sign-Up
+- Fill in required fields:
+  - **Company Name**: Organization name
+  - **Full Name**: Admin's name
+  - **Work Email**: Must be organization domain (validated)
+  - **Password**: Min 8 chars, uppercase, lowercase, number
+- Automatically creates:
+  - User account with `role: 'admin'`
+  - Organization with unique slug based on company name
+  - 14-day free trial
+
+### Email Validation Rules
+
+**Blocked Domains** (Free Email Providers):
+- Gmail, Yahoo, Hotmail, Outlook, Live
+- AOL, iCloud, Proton Mail, Zoho
+- And 15+ other free providers
+
+**Allowed**: Any custom organization domain
+- ✅ `admin@acme.com`
+- ✅ `john@startup.io`
+- ❌ `user@gmail.com`
+- ❌ `admin@yahoo.com`
+
+## Auto-Organization Creation
+
+When a user signs up:
+
+1. **User Created** with Better Auth
+   - `role` = `'admin'` (forced in database hook)
+   - `email`, `name`, `password` stored
+   
+2. **Organization Auto-Created** (via Better Auth hook)
+   - `name` = Company name from form
+   - `slug` = Auto-generated unique slug
+   - `ownerId` = New user ID
+   - `subscription.plan` = `'free'`
+   - `subscription.status` = `'trial'`
+   - `expiresAt` = 14 days from signup
+
+3. **User Updated**
+   - `organizationId` = New organization ID
+
+## Database Hook Implementation
+
+Location: `lib/auth/betterauth.ts`
+
+```typescript
+databaseHooks: {
+  user: {
+    create: {
+      before: async (user) => {
+        // Force role to 'admin' for all signups
+        return {
+          data: {
+            ...user,
+            role: 'admin',
+          },
+        };
+      },
+      after: async (user) => {
+        // Auto-create organization
+        // Generate unique slug
+        // Link user to organization
+      },
+    },
+  },
+},
+```
+
+## Creator Invitation Flow
+
+Organization admins can invite creators:
+
+1. Admin sends invitation from dashboard
+2. Creator receives email with invitation link
+3. Creator signs up via invitation link
+4. User created with `role: 'creator'`
+5. Linked to admin's organization via `organizationId`
+
+## Configuration
+
+### Environment Variables
+
+```bash
+# Required for OAuth
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+
+# Better Auth
+BETTER_AUTH_SECRET=your-secret-key
+BETTER_AUTH_URL=http://localhost:3000
+```
+
+### Google Cloud Console Setup
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Create OAuth 2.0 Client ID
+3. Add authorized redirect URIs:
+   - Development: `http://localhost:3000/api/auth/callback/google`
+   - Production: `https://yourdomain.com/api/auth/callback/google`
+4. Copy Client ID and Secret to `.env`
+
+## File Structure
+
+```
+lib/
+├── auth/
+│   └── betterauth.ts          # Auth config + hooks
+├── utils/
+│   ├── email-validation.ts    # Email domain validation
+│   └── logger.ts              # Structured logging
+└── validations/
+    └── auth.ts                # Zod schemas
+
+app/(auth)/signup/
+└── page.tsx                   # Signup UI with Google + Email
+
+lib/db/models/
+├── User.ts                    # User schema (saas-admin, admin, creator)
+└── Organization.ts            # Organization schema
+```
+
+## Role-Based Access Control
+
+### SaaS Admin
+- Full platform access
+- Can manage all organizations
+- Can access admin panel
+
+### Organization Admin  
+- Manages their organization
+- Can invite/manage creators
+- Can create projects
+- Can view analytics for their org
+
+### Creator
+- Can submit posts
+- Can view their own analytics
+- Can manage their profile
+- Limited to assigned projects
+
+## Security Features
+
+1. **Email Validation**: Blocks free email providers
+2. **Password Requirements**: Enforced via Zod schema
+3. **Auto-Role Assignment**: Prevents privilege escalation
+4. **Organization Isolation**: All queries filtered by `organizationId`
+5. **Session Management**: Secure cookie-based sessions via Better Auth
+
+## Next Steps
+
+1. **Set up Google OAuth** credentials in Cloud Console
+2. **Add environment variables** to `.env.local`
+3. **Test signup flow** with organization email
+4. **Verify organization creation** in MongoDB
+5. **Implement creator invitation** system
+
+## Troubleshooting
+
+**Issue**: "Email must be organization email"
+- **Solution**: Use company domain, not Gmail/Yahoo
+
+**Issue**: Google OAuth not working
+- **Solution**: Check redirect URI matches exactly in Google Console
+
+**Issue**: Organization not created
+- **Solution**: Check logs for database connection errors
+
+**Issue**: User collection vs users collection
+- **Solution**: Better Auth configured with `usePlural: true` to match Mongoose models
+
+## Logging
+
+All authentication events are logged with Pino:
+
+```typescript
+logger.info({ userId, organizationId, slug }, 'Organization created for new user');
+logger.error({ error, userId }, 'Failed to create organization for user');
+```
+
+Check logs in console during development for debugging.
