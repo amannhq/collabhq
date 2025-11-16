@@ -69,6 +69,28 @@ export const auth = betterAuth({
     },
   },
   
+  // CRITICAL: Cookie settings for production
+  trustedOrigins: process.env.NODE_ENV === 'production' 
+    ? [process.env.BETTER_AUTH_URL as string, process.env.NEXT_PUBLIC_APP_URL as string].filter(Boolean)
+    : undefined,
+  
+  basePath: '/api/auth',
+  baseURL: process.env.BETTER_AUTH_URL,
+  
+  advanced: {
+    cookiePrefix: 'better-auth',
+    crossSubDomainCookies: {
+      enabled: false, // Set to true if using subdomains
+    },
+    useSecureCookies: process.env.NODE_ENV === 'production',
+    database: {
+      generateId: () => {
+        // Use MongoDB ObjectId format
+        return new Date().getTime().toString(36) + Math.random().toString(36).substring(2);
+      },
+    },
+  },
+  
   user: {
     additionalFields: {
       role: {
@@ -96,15 +118,6 @@ export const auth = betterAuth({
         type: 'date',
         required: false,
         input: false,
-      },
-    },
-  },
-  
-  advanced: {
-    database: {
-      generateId: () => {
-        // Use MongoDB ObjectId format
-        return new Date().getTime().toString(36) + Math.random().toString(36).substring(2);
       },
     },
   },
