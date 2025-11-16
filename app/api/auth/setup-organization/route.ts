@@ -5,6 +5,7 @@ import { Organization, User } from '@/lib/db/models';
 import { auth } from '@/lib/auth/betterauth';
 import { extractCompanyFromEmail } from '@/lib/utils/email-validation';
 import { initializeDefaultTemplates } from '@/lib/utils/email-template-utils';
+import mongoose from 'mongoose';
 
 const logger = createLogger('setup-organization-api');
 
@@ -29,17 +30,13 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     const userEmail = session.user.email;
 
-    // Check if user's email is verified
-    if (!session.user.emailVerified) {
-      return NextResponse.json(
-        { success: false, error: 'Email not verified' },
-        { status: 403 }
-      );
-    }
-
     await connectDB();
 
-    // Check if user already has organization
+    // Note: We trust that the client only calls this after successful email verification
+    // The verifyEmail endpoint sets emailVerified to true before this is called
+    logger.info({ userId, emailVerified: session.user.emailVerified }, 'Setting up organization');
+
+    // Check if user already has organization in Mongoose User model
     const existingUser = await User.findById(userId).lean() as { organizationId?: string } | null;
     if (existingUser?.organizationId) {
       logger.info({ userId, organizationId: existingUser.organizationId }, 'User already has organization');

@@ -114,6 +114,8 @@ export default function SignupPage() {
 
   const handleVerifyOTP = async (otp: string) => {
     try {
+      setIsLoading(true);
+      
       const result = await authClient.emailOtp.verifyEmail({
         email: userEmail,
         otp,
@@ -125,7 +127,11 @@ export default function SignupPage() {
 
       toast.success('Email verified successfully!');
       
+      // Wait a bit for Better Auth to sync the session
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       // Create organization after email verification
+      let orgCreated = false;
       try {
         const orgResponse = await fetch('/api/auth/setup-organization', {
           method: 'POST',
@@ -134,19 +140,56 @@ export default function SignupPage() {
 
         const orgData = await orgResponse.json();
 
-        if (!orgData.success) {
+        if (orgData.success) {
+          orgCreated = true;
+          toast.success('Organization created successfully!');
+          
+          // Redirect to the organization's dashboard
+          router.push(`/${orgData.data.slug}`);
+          router.refresh();
+        } else {
           console.error('Failed to create organization:', orgData.error);
-          toast.error('Email verified but organization setup failed. Please contact support.');
+          
+          // If it's just the email verified check, try one more time after delay
+          if (orgData.error?.includes('Email not verified')) {
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            const retryResponse = await fetch('/api/auth/setup-organization', {
+              method: 'POST',
+              credentials: 'include',
+            });
+            const retryData = await retryResponse.json();
+            
+            if (retryData.success) {
+              orgCreated = true;
+              toast.success('Organization created successfully!');
+              router.push(`/${retryData.data.slug}`);
+              router.refresh();
+            } else {
+              toast.error('Organization setup failed. Redirecting to login...');
+              setTimeout(() => router.push('/login'), 2000);
+            }
+          } else {
+            toast.error('Organization setup failed. Redirecting to login...');
+            setTimeout(() => router.push('/login'), 2000);
+          }
         }
       } catch (orgError) {
         console.error('Organization setup error:', orgError);
+        toast.error('Organization setup failed. Redirecting to login...');
+        setTimeout(() => router.push('/login'), 2000);
       }
       
-      // Redirect to dashboard
-      router.push('/dashboard');
-      router.refresh();
+      // Only redirect to generic dashboard if org creation failed
+      if (!orgCreated) {
+        setTimeout(() => {
+          router.push('/login');
+          router.refresh();
+        }, 2500);
+      }
     } catch (err) {
       throw err; // Re-throw to show error in OTP component
+    } finally {
+      setIsLoading(false);
     }
   };
 
