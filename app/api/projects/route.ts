@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const organizationId = searchParams.get('organizationId');
+    const organizationId = searchParams.get('organizationId') || searchParams.get('orgId');
     const status = searchParams.get('status');
 
     if (!organizationId) {
@@ -115,19 +115,69 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Build query
-    const query: Record<string, unknown> = { organizationId };
+    // Get projects with aggregated stats
+    const matchStage: Record<string, unknown> = { organizationId: organization._id };
     if (status) {
-      query.status = status;
+      matchStage.status = status;
     }
 
-    const projects = await Project.find(query)
-      .sort({ createdAt: -1 })
-      .lean();
+    const projects = await Project.aggregate([
+      { $match: matchStage },
+      {
+        $lookup: {
+          from: 'users',
+          let: { projectId: '$_id' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ['$creatorProfile.projectId', '$$projectId']
+                }
+              }
+            },
+            { $count: 'count' }
+          ],
+          as: 'creatorStats'
+        }
+      },
+      {
+        $lookup: {
+          from: 'posts',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'posts'
+        }
+      },
+      {
+        $addFields: {
+          creatorCount: { $ifNull: [{ $arrayElemAt: ['$creatorStats.count', 0] }, 0] },
+          postCount: { $size: '$posts' }
+        }
+      },
+      { $project: { posts: 0, creatorStats: 0 } },
+      { $sort: { createdAt: -1 } }
+    ]);
+
+    const formattedProjects = projects.map((p) => ({
+      _id: p._id.toString(),
+      organizationId: p.organizationId.toString(),
+      name: p.name,
+      description: p.description,
+      status: p.status,
+      settings: p.settings,
+      stats: p.stats,
+      createdBy: p.createdBy.toString(),
+      createdAt: p.createdAt instanceof Date ? p.createdAt.toISOString() : p.createdAt,
+      updatedAt: p.updatedAt instanceof Date ? p.updatedAt.toISOString() : p.updatedAt,
+      creatorCount: p.creatorCount || 0,
+      postCount: p.postCount || 0,
+    }));
+
+    logger.info({ orgId: organizationId, count: formattedProjects.length }, 'Fetched projects');
 
     return NextResponse.json({
       success: true,
-      data: projects,
+      data: formattedProjects,
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching projects');

@@ -21,14 +21,32 @@ if (!MONGODB_URI) {
   );
 }
 
-// Connection options
+// Connection options optimized for production
 const options: mongoose.ConnectOptions = {
-  bufferCommands: false, // Disable mongoose buffering
-  maxPoolSize: 10, // Maximum number of sockets the MongoDB driver will keep open
-  minPoolSize: 5, // Minimum number of sockets
-  socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
-  serverSelectionTimeoutMS: 10000, // Keep trying to send operations for 10 seconds
-  family: 4, // Use IPv4, skip trying IPv6
+  // Connection Pool Settings
+  maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE) || 10, // Maximum number of sockets
+  minPoolSize: Number(process.env.MONGODB_MIN_POOL_SIZE) || 2, // Minimum number of sockets to maintain
+  maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
+  
+  // Timeout Settings
+  serverSelectionTimeoutMS: 10000, // Fail fast if server unavailable (10s)
+  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
+  connectTimeoutMS: 10000, // Timeout initial connection after 10s
+  
+  // Performance Settings
+  bufferCommands: false, // Disable mongoose buffering for immediate errors
+  maxConnecting: 2, // Limit simultaneous connection attempts
+  
+  // Network Settings
+  family: 4, // Use IPv4, skip trying IPv6 (faster DNS resolution)
+  
+  // Retry Settings
+  retryWrites: true, // Automatically retry failed writes
+  retryReads: true, // Automatically retry failed reads
+  
+  // Write Concern (for data safety vs performance tradeoff)
+  w: 'majority', // Wait for majority of replica set to acknowledge
+  wtimeoutMS: 5000, // Timeout write acknowledgment after 5s
 };
 
 /**
@@ -43,32 +61,60 @@ if (!cached) {
 }
 
 /**
- * Connect to MongoDB
- * Uses cached connection in development to prevent multiple connections
+ * Connect to MongoDB with optimized connection handling
+ * Uses cached connection to prevent multiple connections in serverless environments
  */
 async function connectDB(): Promise<typeof mongoose> {
-  // If we have a cached connection, return it
+  // If we have a cached connection and it's active, return it
   if (cached.conn) {
-    logger.debug({}, 'Using cached MongoDB connection');
-    return mongoose;
+    const state = mongoose.connection.readyState;
+    
+    // 1 = connected, reuse it
+    if (state === 1) {
+      logger.debug({ env: process.env.NODE_ENV }, 'Using cached MongoDB connection');
+      return mongoose;
+    }
+    
+    // 2 = connecting, wait for it
+    if (state === 2) {
+      logger.debug({}, 'MongoDB connection in progress, waiting...');
+      if (cached.promise) {
+        await cached.promise;
+        return mongoose;
+      }
+    }
+    
+    // 0 or 3 = disconnected/disconnecting, reconnect
+    logger.warn({ state }, 'Cached connection invalid, reconnecting...');
+    cached.conn = null;
+    cached.promise = null;
   }
 
   // If we don't have a promise, create one
   if (!cached.promise) {
-    logger.info({}, 'Creating new MongoDB connection...');
+    logger.info({ env: process.env.NODE_ENV }, 'Creating new MongoDB connection...');
     
     cached.promise = mongoose
       .connect(MONGODB_URI!, options)
       .then((mongooseInstance) => {
+        const conn = mongooseInstance.connection;
         logger.info({
-          database: mongooseInstance.connection.db?.databaseName,
-          host: mongooseInstance.connection.host,
+          database: conn.db?.databaseName,
+          host: conn.host,
+          poolSize: options.maxPoolSize,
+          env: process.env.NODE_ENV,
         }, 'MongoDB connected successfully');
-        return mongooseInstance.connection;
+        return conn;
       })
       .catch((error) => {
-        logger.error({ error }, 'MongoDB connection error');
-        cached.promise = null; // Reset promise on error
+        logger.error({ 
+          error: error.message,
+          code: error.code,
+          env: process.env.NODE_ENV,
+        }, 'MongoDB connection error');
+        // Reset both on error to force reconnection on next attempt
+        cached.conn = null;
+        cached.promise = null;
         throw error;
       });
   }
@@ -77,6 +123,8 @@ async function connectDB(): Promise<typeof mongoose> {
     // Wait for the connection to be established
     cached.conn = await cached.promise;
   } catch (error) {
+    // Ensure we reset on any error
+    cached.conn = null;
     cached.promise = null;
     throw error;
   }
@@ -105,22 +153,74 @@ async function disconnectDB(): Promise<void> {
 }
 
 /**
- * Get current connection status
+ * Get current connection status with detailed metrics
  */
 function getConnectionStatus(): {
   isConnected: boolean;
   readyState: number;
+  readyStateText: string;
   host?: string;
   name?: string;
+  poolSize?: number;
+  activeConnections?: number;
 } {
   const connection = mongoose.connection;
+  
+  const stateMap: Record<number, string> = {
+    0: 'disconnected',
+    1: 'connected',
+    2: 'connecting',
+    3: 'disconnecting',
+    99: 'uninitialized',
+  };
   
   return {
     isConnected: connection.readyState === 1,
     readyState: connection.readyState,
+    readyStateText: stateMap[connection.readyState] || 'unknown',
     host: connection.host,
     name: connection.name,
+    poolSize: options.maxPoolSize,
+    activeConnections: (connection as any).client?.topology?.s?.pool?.totalConnectionCount,
   };
+}
+
+/**
+ * Health check function for monitoring
+ */
+async function healthCheck(): Promise<{
+  healthy: boolean;
+  status: ReturnType<typeof getConnectionStatus>;
+  latency?: number;
+  error?: string;
+}> {
+  const status = getConnectionStatus();
+  
+  if (!status.isConnected) {
+    return {
+      healthy: false,
+      status,
+      error: 'Database not connected',
+    };
+  }
+  
+  try {
+    const startTime = Date.now();
+    await mongoose.connection.db?.admin().ping();
+    const latency = Date.now() - startTime;
+    
+    return {
+      healthy: true,
+      status,
+      latency,
+    };
+  } catch (error) {
+    return {
+      healthy: false,
+      status,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    };
+  }
 }
 
 /**
@@ -139,25 +239,75 @@ const ConnectionState = {
 
 // Event listeners for connection monitoring
 mongoose.connection.on('connected', () => {
-  logger.info({}, 'Mongoose connected to MongoDB');
+  const conn = mongoose.connection;
+  logger.info({
+    host: conn.host,
+    port: conn.port,
+    name: conn.name,
+  }, 'Mongoose connected to MongoDB');
 });
 
 mongoose.connection.on('error', (err) => {
-  logger.error({ error: err }, 'Mongoose connection error');
+  logger.error({ 
+    error: err.message,
+    code: err.code,
+    name: err.name,
+  }, 'Mongoose connection error');
+  
+  // Reset cache on error to allow reconnection
+  if (cached) {
+    cached.conn = null;
+    cached.promise = null;
+  }
 });
 
 mongoose.connection.on('disconnected', () => {
-  logger.info({}, 'Mongoose disconnected from MongoDB');
+  logger.warn({}, 'Mongoose disconnected from MongoDB');
+  
+  // Reset cache on disconnect
+  if (cached) {
+    cached.conn = null;
+    cached.promise = null;
+  }
 });
 
-// Graceful shutdown
-if (process.env.NODE_ENV === 'production') {
-  process.on('SIGINT', async () => {
-    await mongoose.connection.close();
-    logger.info({}, 'Mongoose connection closed due to app termination');
-    process.exit(0);
+mongoose.connection.on('reconnected', () => {
+  logger.info({}, 'Mongoose reconnected to MongoDB');
+});
+
+mongoose.connection.on('close', () => {
+  logger.info({}, 'Mongoose connection closed');
+});
+
+// Monitor connection pool events (useful for debugging)
+if (process.env.NODE_ENV === 'development') {
+  mongoose.connection.on('fullsetup', () => {
+    logger.debug({}, 'MongoDB connection pool ready');
   });
 }
 
+// Graceful shutdown for all environments
+const gracefulShutdown = async (signal: string) => {
+  logger.info({ signal }, 'Received shutdown signal, closing MongoDB connection...');
+  
+  try {
+    await mongoose.connection.close();
+    cached.conn = null;
+    cached.promise = null;
+    logger.info({}, 'Mongoose connection closed due to app termination');
+    process.exit(0);
+  } catch (error) {
+    logger.error({ error }, 'Error during graceful shutdown');
+    process.exit(1);
+  }
+};
+
+// Handle different termination signals
+if (process.env.NODE_ENV !== 'development') {
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGUSR2', () => gracefulShutdown('SIGUSR2')); // nodemon restart
+}
+
 export default connectDB;
-export { disconnectDB, getConnectionStatus, ConnectionState };
+export { disconnectDB, getConnectionStatus, healthCheck, ConnectionState };

@@ -1,12 +1,9 @@
-import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { getSession } from '@/lib/auth/auth-utils';
 import connectDB from '@/lib/db/mongodb';
 import { Organization } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
 import { AnalyticsDashboard } from '@/components/analytics/AnalyticsDashboard';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardContent } from '@/components/ui/card';
 
 interface AnalyticsPageProps {
   params: Promise<{
@@ -22,10 +19,18 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
 
   const { org: orgSlug } = await params;
 
+  // Only fetch organization ID - AnalyticsDashboard handles data fetching
   await connectDB();
-  const organization = await Organization.findOne({ slug: orgSlug }).lean() as IOrganization | null;
+  const organization = await Organization.findOne({ slug: orgSlug })
+    .select('_id ownerId')
+    .lean<IOrganization>();
 
   if (!organization) {
+    redirect('/');
+  }
+
+  // Verify ownership
+  if (organization.ownerId.toString() !== session.user.id) {
     redirect('/');
   }
 
@@ -35,37 +40,12 @@ export default async function AnalyticsPage({ params }: AnalyticsPageProps) {
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Analytics</h2>
           <p className="text-muted-foreground mt-1">
-            Comprehensive insights into your organization&apos;s performance
+            Comprehensive insights into your organization's performance
           </p>
         </div>
       </div>
 
-      <Suspense
-        fallback={
-          <div className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <Skeleton className="h-24 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <Skeleton className="h-80 w-full" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        }
-      >
-        <AnalyticsDashboard organizationId={organization._id.toString()} />
-      </Suspense>
+      <AnalyticsDashboard organizationId={organization._id.toString()} />
     </div>
   );
 }
