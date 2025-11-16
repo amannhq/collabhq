@@ -14,7 +14,7 @@ const siteConfig = {
   name: "Collab",
   title: "Collab - Creator Management Platform",
   description: "Manage creator partnerships, track performance metrics, and streamline collaboration. The all-in-one platform for teams managing creator campaigns at scale.",
-  url: "https://collab.app",
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://collab.app",
   ogImage: "/images/meta.png",
   keywords: [
     "creator management",
@@ -54,10 +54,11 @@ export const metadata: Metadata = {
     siteName: siteConfig.name,
     images: [
       {
-        url: siteConfig.ogImage,
+        url: `${siteConfig.url}${siteConfig.ogImage}`,
         width: 1200,
         height: 630,
         alt: siteConfig.title,
+        type: "image/png",
       },
     ],
   },
@@ -65,8 +66,9 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: siteConfig.title,
     description: siteConfig.description,
-    images: [siteConfig.ogImage],
+    images: [`${siteConfig.url}${siteConfig.ogImage}`],
     creator: "@collab",
+    site: "@collab",
   },
   icons: {
     icon: [
