@@ -17,6 +17,7 @@ import {
   UserPlus,
   Clock,
   CheckCircle2,
+  RefreshCcw,
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -56,12 +57,17 @@ interface DashboardData {
 
 export function DashboardClient({ organizationId }: { organizationId: string }) {
   const params = useParams();
-  const { data, error, isLoading } = useSWR<{ success: boolean; data: DashboardData }>(
+  const {
+    data,
+    error,
+    isLoading,
+    mutate,
+    isValidating,
+  } = useSWR<{ success: boolean; data: DashboardData }>(
     `/api/organizations/${organizationId}/stats`,
     {
-      revalidateOnMount: true, // Always fetch on mount
       dedupingInterval: 30000, // 30 seconds - dashboard data doesn't change often
-      refreshInterval: 60000, // Auto-refresh every 60 seconds
+      refreshInterval: 180000, // Auto-refresh every 3 minutes
       revalidateIfStale: true,
       keepPreviousData: true, // Show old data while loading new
     }
@@ -120,6 +126,14 @@ export function DashboardClient({ organizationId }: { organizationId: string }) 
               New Project
             </Button>
           </Link>
+          <Button
+            variant="outline"
+            onClick={() => mutate(undefined, true)}
+            disabled={isValidating}
+          >
+            <RefreshCcw className="mr-2 h-4 w-4" />
+            {isValidating ? 'Refreshing...' : 'Refresh'}
+          </Button>
         </div>
       </div>
 

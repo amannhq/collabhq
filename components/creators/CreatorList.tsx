@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreatorCard } from './CreatorCard';
 import { Input } from '@/components/ui/input';
@@ -35,37 +35,84 @@ interface CreatorListProps {
 export function CreatorList({ creators, orgSlug, view: initialView }: CreatorListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const activeSearch = searchParams.get('search') || '';
+  const searchParamsString = searchParams.toString();
+  const [searchTerm, setSearchTerm] = useState(activeSearch);
   const [view, setView] = useState<'grid' | 'list'>(initialView);
   const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
+  const [, startTransition] = useTransition();
+  const buildHref = useCallback(
+    (paramsString: string) =>
+      paramsString ? `/${orgSlug}/creators?${paramsString}` : `/${orgSlug}/creators`,
+    [orgSlug]
+  );
+
+  useEffect(() => {
+    setSearchTerm(activeSearch);
+  }, [activeSearch]);
+
+  useEffect(() => {
+    if (searchTerm === activeSearch) {
+      return;
+    }
+
+    const handler = window.setTimeout(() => {
+      const params = new URLSearchParams(searchParamsString);
+      if (searchTerm) {
+        params.set('search', searchTerm);
+      } else {
+        params.delete('search');
+      }
+
+      const nextParamsString = params.toString();
+      if (nextParamsString === searchParamsString) {
+        return;
+      }
+      const href = buildHref(nextParamsString);
+      startTransition(() => {
+        router.push(href);
+      });
+    }, 300);
+
+    return () => {
+      window.clearTimeout(handler);
+    };
+  }, [searchTerm, activeSearch, searchParamsString, router, buildHref]);
 
   const handleSearch = (value: string) => {
     setSearchTerm(value);
-    const params = new URLSearchParams(searchParams.toString());
-    if (value) {
-      params.set('search', value);
-    } else {
-      params.delete('search');
-    }
-    router.push(`/${orgSlug}/creators?${params.toString()}`);
   };
 
   const handleStatusFilter = (value: string) => {
     setStatusFilter(value);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParamsString);
     if (value && value !== 'all') {
       params.set('status', value);
     } else {
       params.delete('status');
     }
-    router.push(`/${orgSlug}/creators?${params.toString()}`);
+    const nextParamsString = params.toString();
+    if (nextParamsString === searchParamsString) {
+      return;
+    }
+    const href = buildHref(nextParamsString);
+    startTransition(() => {
+      router.push(href);
+    });
   };
 
   const handleViewChange = (newView: 'grid' | 'list') => {
     setView(newView);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParamsString);
     params.set('view', newView);
-    router.push(`/${orgSlug}/creators?${params.toString()}`);
+    const nextParamsString = params.toString();
+    if (nextParamsString === searchParamsString) {
+      return;
+    }
+    const href = buildHref(nextParamsString);
+    startTransition(() => {
+      router.push(href);
+    });
   };
 
   return (

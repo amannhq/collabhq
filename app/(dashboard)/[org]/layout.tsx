@@ -44,11 +44,9 @@ export default async function OrganizationLayout({
   }
 
   // 4. Get pending posts count
-  const { Project, Post } = await import('@/lib/db/models');
-  const projects = await Project.find({ organizationId: organization._id }).select('_id').lean();
-  const projectIds = projects.map((p) => p._id);
+  const { Post } = await import('@/lib/db/models');
   const pendingPostsCount = await Post.countDocuments({
-    projectId: { $in: projectIds },
+    organizationId: organization._id,
     status: 'pending',
   });
 

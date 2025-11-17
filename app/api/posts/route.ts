@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Types } from 'mongoose';
 import connectDB from '@/lib/db/mongodb';
 import { Post, Project } from '@/lib/db/models';
 import { auth } from '@/lib/auth';
@@ -50,23 +51,43 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get all projects for this org
-    const projects = await Project.find({ organizationId }).select('_id');
-    const projectIds = projects.map((p) => p._id);
+    let orgObjectId: Types.ObjectId;
+    try {
+      orgObjectId = new Types.ObjectId(organizationId);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid organization ID' },
+        { status: 400 }
+      );
+    }
 
-    // Build query
-    const query: Record<string, unknown> = { projectId: { $in: projectIds } };
+    // Build query scoped to organization
+    const query: Record<string, unknown> = {
+      organizationId: orgObjectId,
+    };
 
     if (status && status !== 'all') {
       query.status = status;
     }
 
     if (projectId) {
-      query.projectId = projectId;
+      if (!Types.ObjectId.isValid(projectId)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid project ID' },
+          { status: 400 }
+        );
+      }
+      query.projectId = new Types.ObjectId(projectId);
     }
 
     if (creatorId) {
-      query.creatorId = creatorId;
+      if (!Types.ObjectId.isValid(creatorId)) {
+        return NextResponse.json(
+          { success: false, error: 'Invalid creator ID' },
+          { status: 400 }
+        );
+      }
+      query.creatorId = new Types.ObjectId(creatorId);
     }
 
     if (search) {
@@ -89,7 +110,7 @@ export async function GET(request: NextRequest) {
     ]);
 
     logger.info(
-      { organizationId, total, page, limit },
+      { organizationId: orgObjectId.toHexString(), total, page, limit },
       'Posts fetched successfully'
     );
 

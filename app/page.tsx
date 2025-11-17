@@ -46,38 +46,34 @@ export default async function Home() {
     <div className="min-h-screen bg-[#f3f1ea]">
       {/* Navigation */}
       <header className="border-b border-zinc-200/50 bg-[#f3f1ea]">
-        <nav className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <nav className="container mx-auto px-4 py-4 flex flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <h1 className="text-2xl font-bold text-zinc-900">
               Collab
             </h1>
           </div>
-          <div className="flex gap-3">
-            <Button variant="ghost" asChild>
+          <div className="flex flex-row items-center gap-2 sm:gap-3">
+            <Button variant="ghost" asChild className="whitespace-nowrap">
               <Link href="/login">Login</Link>
             </Button>
-            <Button asChild className="bg-zinc-900 hover:bg-zinc-800">
+            <Button asChild className="whitespace-nowrap bg-zinc-900 hover:bg-zinc-800">
               <Link href="/signup">Get Started</Link>
             </Button>
           </div>
         </nav>
       </header>
 
-      <main>
+      <main className="overflow-x-hidden">
         {/* Hero Section */}
         <Hero
           eyebrow="THE CREATOR MANAGEMENT PLATFORM"
           title={
-            <>
-              <div className="whitespace-nowrap">
-                <span className="font-serif font-normal">Your creators, </span>
-                <span className="font-serif font-normal italic">seamlessly </span>
-                <span className="font-serif font-normal">connected</span>
-              </div>
-              <div className="font-serif font-normal">
-                to your workflow
-              </div>
-            </>
+            <div className="font-serif font-normal">
+              <span>Your creators, </span>
+              <span className="italic">seamlessly </span>
+              <span>connected </span>
+              <span className="whitespace-nowrap">to your workflow</span>
+            </div>
           }
           subtitle="Collab brings your creator partnerships, content tracking, and performance metrics together so you can focus on growing results, not managing spreadsheets"
           ctaText="Get started free"
@@ -173,18 +169,18 @@ export default async function Home() {
                   Join teams managing thousands of creator partnerships with Collab
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                  <Button 
-                    size="lg" 
-                    asChild 
-                    className="bg-white text-zinc-900 hover:bg-zinc-100 px-8 py-6 text-base sm:text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  <Button
+                    size="lg"
+                    asChild
+                    className="w-full bg-white text-zinc-900 hover:bg-zinc-100 px-8 py-6 text-base sm:w-auto sm:text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all"
                   >
                     <Link href="/signup">Start Free Trial</Link>
                   </Button>
-                  <Button 
-                    size="lg" 
-                    variant="ghost" 
-                    asChild 
-                    className="border-2 border-zinc-700 text-white hover:bg-zinc-800 hover:border-zinc-600 px-8 py-6 text-base sm:text-lg font-medium rounded-xl transition-all"
+                  <Button
+                    size="lg"
+                    variant="ghost"
+                    asChild
+                    className="w-full border-2 border-zinc-700 text-white hover:bg-zinc-800 hover:border-zinc-600 px-8 py-6 text-base sm:w-auto sm:text-lg font-medium rounded-xl transition-all"
                   >
                     <Link href="/login">Sign In</Link>
                   </Button>

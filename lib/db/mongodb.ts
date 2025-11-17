@@ -237,53 +237,63 @@ const ConnectionState = {
   DISCONNECTING: 3,
 } as const;
 
-// Event listeners for connection monitoring
-mongoose.connection.on('connected', () => {
-  const conn = mongoose.connection;
-  logger.info({
-    host: conn.host,
-    port: conn.port,
-    name: conn.name,
-  }, 'Mongoose connected to MongoDB');
-});
+// Increase max listeners to prevent warnings in development with hot reloading
+mongoose.connection.setMaxListeners(20);
 
-mongoose.connection.on('error', (err) => {
-  logger.error({ 
-    error: err.message,
-    code: err.code,
-    name: err.name,
-  }, 'Mongoose connection error');
-  
-  // Reset cache on error to allow reconnection
-  if (cached) {
-    cached.conn = null;
-    cached.promise = null;
-  }
-});
+// Track if listeners have been registered to prevent duplicates
+let listenersRegistered = false;
 
-mongoose.connection.on('disconnected', () => {
-  logger.warn({}, 'Mongoose disconnected from MongoDB');
-  
-  // Reset cache on disconnect
-  if (cached) {
-    cached.conn = null;
-    cached.promise = null;
-  }
-});
+// Event listeners for connection monitoring (register only once)
+if (!listenersRegistered) {
+  listenersRegistered = true;
 
-mongoose.connection.on('reconnected', () => {
-  logger.info({}, 'Mongoose reconnected to MongoDB');
-});
-
-mongoose.connection.on('close', () => {
-  logger.info({}, 'Mongoose connection closed');
-});
-
-// Monitor connection pool events (useful for debugging)
-if (process.env.NODE_ENV === 'development') {
-  mongoose.connection.on('fullsetup', () => {
-    logger.debug({}, 'MongoDB connection pool ready');
+  mongoose.connection.on('connected', () => {
+    const conn = mongoose.connection;
+    logger.info({
+      host: conn.host,
+      port: conn.port,
+      name: conn.name,
+    }, 'Mongoose connected to MongoDB');
   });
+
+  mongoose.connection.on('error', (err) => {
+    logger.error({ 
+      error: err.message,
+      code: err.code,
+      name: err.name,
+    }, 'Mongoose connection error');
+    
+    // Reset cache on error to allow reconnection
+    if (cached) {
+      cached.conn = null;
+      cached.promise = null;
+    }
+  });
+
+  mongoose.connection.on('disconnected', () => {
+    logger.warn({}, 'Mongoose disconnected from MongoDB');
+    
+    // Reset cache on disconnect
+    if (cached) {
+      cached.conn = null;
+      cached.promise = null;
+    }
+  });
+
+  mongoose.connection.on('reconnected', () => {
+    logger.info({}, 'Mongoose reconnected to MongoDB');
+  });
+
+  mongoose.connection.on('close', () => {
+    logger.info({}, 'Mongoose connection closed');
+  });
+
+  // Monitor connection pool events (useful for debugging)
+  if (process.env.NODE_ENV === 'development') {
+    mongoose.connection.on('fullsetup', () => {
+      logger.debug({}, 'MongoDB connection pool ready');
+    });
+  }
 }
 
 // Graceful shutdown for all environments

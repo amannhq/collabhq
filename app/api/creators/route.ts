@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Types } from 'mongoose';
 import connectDB from '@/lib/db/mongodb';
-import { User, Post } from '@/lib/db/models';
+import { User } from '@/lib/db/models';
 import { getSession } from '@/lib/auth';
 import { createLogger } from '@/lib/utils/logger';
 
@@ -30,83 +31,110 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const query: Record<string, unknown> = {
-      organizationId,
+    let orgObjectId: Types.ObjectId;
+    try {
+      orgObjectId = new Types.ObjectId(organizationId);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid organization ID' },
+        { status: 400 }
+      );
+    }
+
+    const matchStage: Record<string, unknown> = {
+      organizationId: orgObjectId,
       role: 'creator',
     };
 
     if (status && status !== 'all') {
-      query['creatorProfile.status'] = status;
+      matchStage['creatorProfile.status'] = status;
     }
 
-    const creators = await User.find(query)
-      .select('name email creatorProfile createdAt')
-      .sort({ createdAt: -1 })
-      .lean();
+    const searchStage =
+      search && search.trim().length > 0
+        ? {
+            $or: [
+              { name: { $regex: search, $options: 'i' } },
+              { email: { $regex: search, $options: 'i' } },
+              { 'creatorProfile.twitterHandle': { $regex: search, $options: 'i' } },
+            ],
+          }
+        : null;
 
-    // Get stats for each creator
-    const creatorsWithStats = await Promise.all(
-      creators.map(async (creator: any) => {
-        const postsCount = await Post.countDocuments({
-          organizationId,
-          creatorId: creator._id,
-        });
-
-        const approvedPosts = await Post.countDocuments({
-          organizationId,
-          creatorId: creator._id,
-          status: 'approved',
-        });
-
-        // Get total engagement
-        const posts = await Post.find({
-          organizationId,
-          creatorId: creator._id,
-          status: 'approved',
-        })
-          .select('latestMetrics')
-          .lean();
-
-        const totalEngagement = posts.reduce((sum: number, post: any) => {
-          const metrics = post.latestMetrics || {};
-          return (
-            sum +
-            (metrics.likes || 0) +
-            (metrics.retweets || 0) +
-            (metrics.replies || 0)
-          );
-        }, 0);
-
-        return {
-          _id: creator._id.toString(),
-          name: creator.name || '',
-          email: creator.email || '',
-          twitterHandle: creator.creatorProfile?.twitterHandle || '',
-          status: creator.creatorProfile?.status || 'invited',
-          createdAt: creator.createdAt || new Date(),
-          postsCount,
-          approvedPosts,
-          totalEngagement,
-        };
-      })
-    );
-
-    // Apply search filter
-    let filteredCreators = creatorsWithStats;
-    if (search) {
-      const searchLower = search.toLowerCase();
-      filteredCreators = creatorsWithStats.filter(
-        (creator) =>
-          creator.name?.toLowerCase().includes(searchLower) ||
-          creator.email?.toLowerCase().includes(searchLower) ||
-          creator.twitterHandle?.toLowerCase().includes(searchLower)
-      );
-    }
+    const creators = await User.aggregate([
+      { $match: matchStage },
+      ...(searchStage ? [{ $match: searchStage }] : []),
+      {
+        $lookup: {
+          from: 'posts',
+          let: { creatorId: '$_id', orgId: '$organizationId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$creatorId', '$$creatorId'] },
+                    { $eq: ['$organizationId', '$$orgId'] },
+                  ],
+                },
+              },
+            },
+            {
+              $group: {
+                _id: null,
+                postsCount: { $sum: 1 },
+                approvedPosts: {
+                  $sum: {
+                    $cond: [{ $eq: ['$status', 'approved'] }, 1, 0],
+                  },
+                },
+                totalEngagement: {
+                  $sum: {
+                    $add: [
+                      { $ifNull: ['$latestMetrics.likes', 0] },
+                      { $ifNull: ['$latestMetrics.retweets', 0] },
+                      { $ifNull: ['$latestMetrics.replies', 0] },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+          as: 'postStats',
+        },
+      },
+      {
+        $addFields: {
+          postStats: { $first: '$postStats' },
+        },
+      },
+      {
+        $addFields: {
+          postsCount: { $ifNull: ['$postStats.postsCount', 0] },
+          approvedPosts: { $ifNull: ['$postStats.approvedPosts', 0] },
+          totalEngagement: { $ifNull: ['$postStats.totalEngagement', 0] },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          createdAt: 1,
+          twitterHandle: '$creatorProfile.twitterHandle',
+          status: '$creatorProfile.status',
+          postsCount: 1,
+          approvedPosts: 1,
+          totalEngagement: 1,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
 
     logger.info(
       {
         orgId: organizationId,
-        count: filteredCreators.length,
+        count: creators.length,
         filters: { status, search },
       },
       'Fetched creators list'
@@ -115,7 +143,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         success: true,
-        data: filteredCreators,
+        data: creators.map((creator) => ({
+          _id: creator._id.toString(),
+          name: creator.name || '',
+          email: creator.email || '',
+          twitterHandle: creator.twitterHandle || '',
+          status: creator.status || 'invited',
+          createdAt: creator.createdAt ?? new Date(),
+          postsCount: creator.postsCount || 0,
+          approvedPosts: creator.approvedPosts || 0,
+          totalEngagement: creator.totalEngagement || 0,
+        })),
       },
       {
         headers: {
