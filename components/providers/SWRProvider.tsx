@@ -2,7 +2,7 @@
 
 import { SWRConfig, Cache } from 'swr';
 import { useEffect, useMemo, useState } from 'react';
-import { fetcher } from '@/lib/swr/fetcher';
+import { fetcher } from '@/lib/swr/config';
 
 const CACHE_STORAGE_KEY = 'app-cache';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -143,13 +143,17 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
     () => ({
       fetcher,
       provider: isClient ? localStorageProvider : undefined,
-      dedupingInterval: 10000,
-      revalidateOnFocus: false,
-      revalidateOnReconnect: true,
-      revalidateIfStale: true,
-      shouldRetryOnError: false,
-      errorRetryCount: 0,
-      keepPreviousData: true,
+      // Optimized settings for better performance
+      dedupingInterval: 5000, // Reduced from 10s to 5s for faster updates
+      revalidateOnFocus: false, // Don't refetch on focus (too aggressive)
+      revalidateOnReconnect: true, // Refetch when internet reconnects
+      revalidateIfStale: true, // Refetch if data is stale
+      shouldRetryOnError: true, // Enable retries
+      errorRetryCount: 3, // Retry up to 3 times
+      errorRetryInterval: 2000, // 2 seconds between retries
+      keepPreviousData: true, // Keep previous data while loading new
+      loadingTimeout: 3000, // Show loading after 3s
+      focusThrottleInterval: 10000, // Throttle focus revalidation (10s)
     }),
     [isClient]
   );

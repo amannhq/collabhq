@@ -50,12 +50,31 @@ export default async function OrganizationLayout({
     status: 'pending',
   });
 
+  // Serialize organization object - convert ObjectIds to strings for Client Component
+  // This prevents "Objects with toJSON methods" error when passing to Client Components
+  // JSON.stringify automatically calls toJSON() on ObjectIds, converting them to strings
+  const serializedOrganization = JSON.parse(
+    JSON.stringify(organization)
+  ) as {
+    _id: string;
+    ownerId: string;
+    name: string;
+    slug: string;
+    subscription: IOrganization['subscription'];
+    settings: IOrganization['settings'];
+    limits: IOrganization['limits'];
+    usage: IOrganization['usage'];
+    createdAt: string;
+    updatedAt: string;
+    __v?: number;
+  };
+
   // Pass all data to client component
   // Client component handles navigation without server queries
   return (
     <ClientLayout
       orgSlug={resolvedParams.org}
-      organization={organization}
+      organization={serializedOrganization}
       session={session}
       pendingPostsCount={pendingPostsCount}
     >

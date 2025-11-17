@@ -30,89 +30,100 @@ interface CreatorListProps {
   creators: Creator[];
   orgSlug: string;
   view: 'grid' | 'list';
+  search: string;
+  status: string;
+  project: string;
+  onSearchChange: (value: string) => void;
+  onStatusChange: (value: string) => void;
+  onProjectChange: (value: string) => void;
+  onViewChange: (value: 'grid' | 'list') => void;
+  onRefresh?: () => void;
 }
 
-export function CreatorList({ creators, orgSlug, view: initialView }: CreatorListProps) {
+export function CreatorList({ 
+  creators, 
+  orgSlug, 
+  view,
+  search,
+  status,
+  project,
+  onSearchChange,
+  onStatusChange,
+  onProjectChange,
+  onViewChange,
+  onRefresh,
+}: CreatorListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const activeSearch = searchParams.get('search') || '';
-  const searchParamsString = searchParams.toString();
-  const [searchTerm, setSearchTerm] = useState(activeSearch);
-  const [view, setView] = useState<'grid' | 'list'>(initialView);
-  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || 'all');
   const [, startTransition] = useTransition();
+  
+  // Sync local state with URL params on mount and when URL changes
+  useEffect(() => {
+    const urlSearch = searchParams.get('search') || '';
+    const urlStatus = searchParams.get('status') || 'all';
+    const urlProject = searchParams.get('project') || 'all';
+    const urlView = (searchParams.get('view') || 'grid') as 'grid' | 'list';
+    
+    if (urlSearch !== search) onSearchChange(urlSearch);
+    if (urlStatus !== status) onStatusChange(urlStatus);
+    if (urlProject !== project) onProjectChange(urlProject);
+    if (urlView !== view) onViewChange(urlView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]); // Only sync when URL params change (intentionally not including all deps to avoid loops)
+
   const buildHref = useCallback(
     (paramsString: string) =>
       paramsString ? `/${orgSlug}/creators?${paramsString}` : `/${orgSlug}/creators`,
     [orgSlug]
   );
 
+  // Debounced search with URL sync
   useEffect(() => {
-    setSearchTerm(activeSearch);
-  }, [activeSearch]);
-
-  useEffect(() => {
-    if (searchTerm === activeSearch) {
-      return;
-    }
-
     const handler = window.setTimeout(() => {
-      const params = new URLSearchParams(searchParamsString);
-      if (searchTerm) {
-        params.set('search', searchTerm);
+      const params = new URLSearchParams(searchParams.toString());
+      if (search) {
+        params.set('search', search);
       } else {
         params.delete('search');
       }
+      if (status !== 'all') {
+        params.set('status', status);
+      } else {
+        params.delete('status');
+      }
+      if (project !== 'all') {
+        params.set('project', project);
+      } else {
+        params.delete('project');
+      }
+      params.set('view', view);
 
       const nextParamsString = params.toString();
-      if (nextParamsString === searchParamsString) {
-        return;
+      const currentParamsString = searchParams.toString();
+      
+      if (nextParamsString !== currentParamsString) {
+        const href = buildHref(nextParamsString);
+        startTransition(() => {
+          router.push(href, { scroll: false }); // Don't scroll on filter changes
+        });
       }
-      const href = buildHref(nextParamsString);
-      startTransition(() => {
-        router.push(href);
-      });
     }, 300);
 
     return () => {
       window.clearTimeout(handler);
     };
-  }, [searchTerm, activeSearch, searchParamsString, router, buildHref]);
+  }, [search, status, project, view, searchParams, router, buildHref]);
 
   const handleSearch = (value: string) => {
-    setSearchTerm(value);
+    onSearchChange(value);
   };
 
   const handleStatusFilter = (value: string) => {
-    setStatusFilter(value);
-    const params = new URLSearchParams(searchParamsString);
-    if (value && value !== 'all') {
-      params.set('status', value);
-    } else {
-      params.delete('status');
-    }
-    const nextParamsString = params.toString();
-    if (nextParamsString === searchParamsString) {
-      return;
-    }
-    const href = buildHref(nextParamsString);
-    startTransition(() => {
-      router.push(href);
-    });
+    onStatusChange(value);
   };
 
   const handleViewChange = (newView: 'grid' | 'list') => {
-    setView(newView);
-    const params = new URLSearchParams(searchParamsString);
-    params.set('view', newView);
-    const nextParamsString = params.toString();
-    if (nextParamsString === searchParamsString) {
-      return;
-    }
-    const href = buildHref(nextParamsString);
-    startTransition(() => {
-      router.push(href);
-    });
+    onViewChange(newView);
   };
 
   return (
@@ -124,12 +135,12 @@ export function CreatorList({ creators, orgSlug, view: initialView }: CreatorLis
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search creators..."
-              value={searchTerm}
+              value={search}
               onChange={(e) => handleSearch(e.target.value)}
               className="pl-8"
             />
           </div>
-          <Select value={statusFilter} onValueChange={handleStatusFilter}>
+          <Select value={status} onValueChange={handleStatusFilter}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Filter by status" />
             </SelectTrigger>
@@ -164,7 +175,7 @@ export function CreatorList({ creators, orgSlug, view: initialView }: CreatorLis
           </div>
           <h3 className="mt-4 text-lg font-semibold">No creators found</h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            {searchTerm
+            {search
               ? 'Try adjusting your search or filters'
               : 'Get started by inviting your first creator'}
           </p>

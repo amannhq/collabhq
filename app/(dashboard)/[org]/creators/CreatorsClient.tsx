@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
-import { fetcher } from '@/lib/swr/fetcher';
+import { fetcher } from '@/lib/swr/config';
 import { CreatorList } from '@/components/creators/CreatorList';
 import { Button } from '@/components/ui/button';
 import { UserPlus } from 'lucide-react';
@@ -66,24 +66,34 @@ export function CreatorsClient({
   initialProject = 'all',
   initialStatus = 'all',
 }: CreatorsClientProps) {
-  const [view] = useState<'grid' | 'list'>(initialView);
+  // Use local state for filters to enable instant updates
+  const [search, setSearch] = useState(initialSearch);
+  const [status, setStatus] = useState(initialStatus);
+  const [project, setProject] = useState(initialProject);
+  const [view, setView] = useState<'grid' | 'list'>(initialView);
 
-  // Build query params for API
-  const queryParams = new URLSearchParams({
-    orgId: organizationId,
-    ...(initialSearch && { search: initialSearch }),
-    ...(initialProject !== 'all' && { project: initialProject }),
-    ...(initialStatus !== 'all' && { status: initialStatus }),
-  });
+  // Build query params for API using local state (enables instant updates)
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams({
+      orgId: organizationId,
+    });
+    if (search) params.set('search', search);
+    if (status !== 'all') params.set('status', status);
+    if (project !== 'all') params.set('project', project);
+    return params.toString();
+  }, [organizationId, search, status, project]);
 
-  const { data, error, isLoading } = useSWR<{
+  const { data, error, isLoading, mutate } = useSWR<{
     success: boolean;
     data: Creator[];
     error?: string;
-  }>(`/api/creators?${queryParams.toString()}`, fetcher, {
+  }>(`/api/creators?${queryParams}`, fetcher, {
     dedupingInterval: 20000, // 20 seconds - creator list changes infrequently
     revalidateIfStale: true,
-    keepPreviousData: true,
+    keepPreviousData: true, // Show old data while loading new
+    revalidateOnFocus: false, // Don't refetch on focus
+    shouldRetryOnError: true,
+    errorRetryCount: 2,
   });
 
   if (error) {
@@ -156,7 +166,19 @@ export function CreatorsClient({
       </div>
 
       {/* Creators List */}
-      <CreatorList creators={creators} orgSlug={orgSlug} view={view} />
+      <CreatorList 
+        creators={creators} 
+        orgSlug={orgSlug} 
+        view={view}
+        search={search}
+        status={status}
+        project={project}
+        onSearchChange={setSearch}
+        onStatusChange={setStatus}
+        onProjectChange={setProject}
+        onViewChange={setView}
+        onRefresh={mutate}
+      />
     </div>
   );
 }

@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect } from 'react';
 import useSWR from 'swr';
 import { useParams } from 'next/navigation';
+import { fetcher } from '@/lib/swr/config';
 import { MetricsChart } from '@/components/analytics/MetricsChart';
 import { EngagementChart } from '@/components/analytics/EngagementChart';
 import { GrowthChart } from '@/components/analytics/GrowthChart';
@@ -64,23 +66,65 @@ export function DashboardClient({ organizationId }: { organizationId: string }) 
     mutate,
     isValidating,
   } = useSWR<{ success: boolean; data: DashboardData }>(
-    `/api/organizations/${organizationId}/stats`,
+    organizationId ? `/api/organizations/${organizationId}/stats` : null, // Don't fetch if no orgId
+    fetcher, // Explicitly pass fetcher to ensure credentials are included
     {
       dedupingInterval: 30000, // 30 seconds - dashboard data doesn't change often
       refreshInterval: 180000, // Auto-refresh every 3 minutes
       revalidateIfStale: true,
       keepPreviousData: true, // Show old data while loading new
+      revalidateOnMount: true, // Always fetch on mount
+      revalidateOnFocus: false, // Don't refetch on focus
+      shouldRetryOnError: true,
+      errorRetryCount: 2,
+      // Force immediate fetch on mount (especially after redirect)
+      fallbackData: undefined,
     }
   );
+
+  // Force revalidation on mount (especially important after redirect from login)
+  useEffect(() => {
+    if (organizationId && !data && !error) {
+      // If we have orgId but no data and no error, force a fetch
+      // This handles the case where SWR doesn't trigger on initial mount after redirect
+      const timer = setTimeout(() => {
+        mutate();
+      }, 100); // Small delay to ensure cookies are available
+      
+      return () => clearTimeout(timer);
+    }
+  }, [organizationId]); // Only run when organizationId changes (on mount)
 
   if (isLoading) {
     return <DashboardSkeleton />;
   }
 
-  if (error || !data?.success) {
+  if (error) {
+    const errorStatus = (error as any)?.status;
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <p className="text-muted-foreground">Failed to load dashboard data</p>
+        {errorStatus === 401 && (
+          <p className="text-sm text-destructive">
+            Authentication error. Please refresh the page.
+          </p>
+        )}
+        <Button onClick={() => mutate()} variant="outline" size="sm">
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  if (!data?.success) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 space-y-4">
+        <p className="text-muted-foreground">Failed to load dashboard data</p>
+        <Button onClick={() => mutate()} variant="outline" size="sm">
+          <RefreshCcw className="mr-2 h-4 w-4" />
+          Retry
+        </Button>
       </div>
     );
   }

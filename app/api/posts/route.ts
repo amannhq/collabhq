@@ -97,9 +97,10 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Get posts with pagination
+    // Get posts with pagination - OPTIMIZED
     const [posts, total] = await Promise.all([
       Post.find(query)
+        .select('postUrl status createdAt updatedAt latestMetrics creatorId projectId tweetId') // Only select needed fields
         .populate('creatorId', 'name email twitterHandle')
         .populate('projectId', 'name')
         .sort({ createdAt: -1 })
@@ -114,18 +115,26 @@ export async function GET(request: NextRequest) {
       'Posts fetched successfully'
     );
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        posts,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages: Math.ceil(total / limit),
+    return NextResponse.json(
+      {
+        success: true,
+        data: {
+          posts,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages: Math.ceil(total / limit),
+          },
         },
       },
-    });
+      {
+        headers: {
+          // Cache posts list for 1 minute
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120, max-age=30',
+        },
+      }
+    );
   } catch (error) {
     logger.error({ error }, 'Error fetching posts');
     return NextResponse.json(

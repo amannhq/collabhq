@@ -13,6 +13,7 @@
     "db:seed:notifications": "bun scripts/seed-notifications.ts",
     "db:backup": "bun scripts/backup-db.ts",
     "db:fix-indexes": "bun scripts/fix-indexes.ts",
+    "db:verify-indexes": "bun scripts/verify-indexes.ts",
     "auth:migrate": "bunx @better-auth/cli migrate",
     "test:logger": "bun scripts/test-logger.ts"
   },

@@ -21,21 +21,21 @@ if (!MONGODB_URI) {
   );
 }
 
-// Connection options optimized for production
+// Connection options optimized for serverless (Vercel)
 const options: mongoose.ConnectOptions = {
-  // Connection Pool Settings
-  maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE) || 10, // Maximum number of sockets
-  minPoolSize: Number(process.env.MONGODB_MIN_POOL_SIZE) || 2, // Minimum number of sockets to maintain
-  maxIdleTimeMS: 60000, // Close idle connections after 60 seconds
+  // Connection Pool Settings - Optimized for Serverless
+  maxPoolSize: Number(process.env.MONGODB_MAX_POOL_SIZE) || 5, // Reduced for serverless (was 10)
+  minPoolSize: Number(process.env.MONGODB_MIN_POOL_SIZE) || 1, // Minimal pool (was 2)
+  maxIdleTimeMS: 30000, // Close idle faster in serverless (was 60s)
   
-  // Timeout Settings
-  serverSelectionTimeoutMS: 10000, // Fail fast if server unavailable (10s)
-  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-  connectTimeoutMS: 10000, // Timeout initial connection after 10s
+  // Timeout Settings - Aggressive for faster failures
+  serverSelectionTimeoutMS: 5000, // Fail faster in serverless (was 10s)
+  socketTimeoutMS: 30000, // Shorter timeout for serverless (was 45s)
+  connectTimeoutMS: 5000, // Quick connection timeout (was 10s)
   
   // Performance Settings
   bufferCommands: false, // Disable mongoose buffering for immediate errors
-  maxConnecting: 2, // Limit simultaneous connection attempts
+  maxConnecting: 1, // Single connection attempt in serverless (was 2)
   
   // Network Settings
   family: 4, // Use IPv4, skip trying IPv6 (faster DNS resolution)
@@ -44,9 +44,12 @@ const options: mongoose.ConnectOptions = {
   retryWrites: true, // Automatically retry failed writes
   retryReads: true, // Automatically retry failed reads
   
-  // Write Concern (for data safety vs performance tradeoff)
-  w: 'majority', // Wait for majority of replica set to acknowledge
-  wtimeoutMS: 5000, // Timeout write acknowledgment after 5s
+  // Write Concern (optimized for speed)
+  w: 1, // Only wait for primary acknowledgment (faster than 'majority')
+  wtimeoutMS: 2500, // Shorter write timeout (was 5s)
+  
+  // Compression for faster data transfer
+  compressors: ['zlib'],
 };
 
 /**

@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Types } from 'mongoose';
 import connectDB from '@/lib/db/mongodb';
-import { User } from '@/lib/db/models';
+import { User, Organization } from '@/lib/db/models';
+import type { IOrganization } from '@/lib/db/models/Organization';
 import { getSession } from '@/lib/auth';
 import { createLogger } from '@/lib/utils/logger';
+import { cache } from '@/lib/utils/cache';
 
 const logger = createLogger('creators-api');
 
@@ -12,7 +14,7 @@ export async function GET(request: NextRequest) {
     await connectDB();
     const session = await getSession();
 
-    if (!session) {
+    if (!session?.user) {
       return NextResponse.json(
         { success: false, error: 'Unauthorized' },
         { status: 401 }
@@ -38,6 +40,56 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(
         { success: false, error: 'Invalid organization ID' },
         { status: 400 }
+      );
+    }
+
+    // SECURITY: Verify user owns the organization
+    const cacheKey = `org:${organizationId}:owner:${session.user.id}`;
+    let isOwner = cache.get<boolean>(cacheKey);
+    
+    if (isOwner === null) {
+      const organization = await Organization.findById(orgObjectId)
+        .select('ownerId')
+        .lean<IOrganization>();
+      
+      if (!organization) {
+        return NextResponse.json(
+          { success: false, error: 'Organization not found' },
+          { status: 404 }
+        );
+      }
+      
+      isOwner = organization.ownerId.toString() === session.user.id;
+      
+      // Cache for 5 minutes
+      cache.set(cacheKey, isOwner, 300);
+    }
+    
+    if (!isOwner) {
+      return NextResponse.json(
+        { success: false, error: 'Forbidden - You do not have access to this organization' },
+        { status: 403 }
+      );
+    }
+
+    // Build cache key based on query params
+    const queryCacheKey = `creators:${organizationId}:${status || 'all'}:${search || ''}`;
+    const cachedCreators = cache.get<any[]>(queryCacheKey);
+    
+    if (cachedCreators) {
+      logger.info({ orgId: organizationId, cached: true }, 'Creators list served from cache');
+      return NextResponse.json(
+        {
+          success: true,
+          data: cachedCreators,
+        },
+        {
+          headers: {
+            'X-Cache': 'HIT',
+            'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120, max-age=30',
+            'CDN-Cache-Control': 'public, s-maxage=60',
+          },
+        }
       );
     }
 
@@ -131,33 +183,41 @@ export async function GET(request: NextRequest) {
       { $sort: { createdAt: -1 } },
     ]);
 
+    const formattedCreators = creators.map((creator) => ({
+      _id: creator._id.toString(),
+      name: creator.name || '',
+      email: creator.email || '',
+      twitterHandle: creator.twitterHandle || '',
+      status: creator.status || 'invited',
+      createdAt: creator.createdAt ?? new Date(),
+      postsCount: creator.postsCount || 0,
+      approvedPosts: creator.approvedPosts || 0,
+      totalEngagement: creator.totalEngagement || 0,
+    }));
+
+    // Cache for 1 minute (shorter than stats since creators list changes more frequently)
+    cache.set(queryCacheKey, formattedCreators, 60);
+
     logger.info(
       {
         orgId: organizationId,
         count: creators.length,
         filters: { status, search },
+        cached: false,
       },
-      'Fetched creators list'
+      'Fetched creators list from DB'
     );
 
     return NextResponse.json(
       {
         success: true,
-        data: creators.map((creator) => ({
-          _id: creator._id.toString(),
-          name: creator.name || '',
-          email: creator.email || '',
-          twitterHandle: creator.twitterHandle || '',
-          status: creator.status || 'invited',
-          createdAt: creator.createdAt ?? new Date(),
-          postsCount: creator.postsCount || 0,
-          approvedPosts: creator.approvedPosts || 0,
-          totalEngagement: creator.totalEngagement || 0,
-        })),
+        data: formattedCreators,
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=20, stale-while-revalidate=40',
+          'X-Cache': 'MISS',
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120, max-age=30',
+          'CDN-Cache-Control': 'public, s-maxage=60',
         },
       }
     );
