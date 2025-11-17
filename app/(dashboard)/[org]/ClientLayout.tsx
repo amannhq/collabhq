@@ -88,7 +88,7 @@ export function ClientLayout({
         organizationId={organization._id}
         pendingPostsCount={pendingPostsCount}
       />
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 min-w-0 overflow-x-hidden">
         <Header
           orgSlug={orgSlug}
           orgName={organization.name}
@@ -98,7 +98,7 @@ export function ClientLayout({
           organizationId={organization._id}
         />
         <main className="flex-1 overflow-y-auto bg-background">
-          <div className="p-4 lg:p-6">
+          <div className="p-4 lg:p-6 max-w-full">
             <SWRProvider>
               {children}
             </SWRProvider>
