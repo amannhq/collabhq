@@ -10,19 +10,12 @@ import { authClient } from '@/lib/auth/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, CheckCircle2, XCircle } from 'lucide-react';
+import { BrandBackground } from '@/components/ui/brand-background';
+import { Eye, EyeOff, CheckCircle2, XCircle, Sparkles } from 'lucide-react';
 import { OTPVerification } from '@/components/auth/OTPVerification';
 import { toast } from 'sonner';
+import { motion, AnimatePresence, type Transition } from 'framer-motion';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -201,40 +194,88 @@ export default function SignupPage() {
     toast.success('New verification code sent');
   };
 
+  const layoutTransition: Transition = {
+    type: 'spring',
+    stiffness: 140,
+    damping: 22,
+    mass: 0.8,
+  };
+
   // Show OTP verification screen if needed
   if (showOTPVerification) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <OTPVerification
-          email={userEmail}
-          onVerify={handleVerifyOTP}
-          onResend={handleResendOTP}
-          isLoading={isLoading}
-        />
-      </div>
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="flex items-center justify-center min-h-screen"
+      >
+        <motion.div layout transition={layoutTransition}>
+          <OTPVerification
+            email={userEmail}
+            onVerify={handleVerifyOTP}
+            onResend={handleResendOTP}
+            isLoading={isLoading}
+          />
+        </motion.div>
+      </motion.div>
     );
   }
 
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2 mb-2">
-          <CardTitle className="text-2xl font-bold">
-            Create an account
-          </CardTitle>
-          <Badge variant="secondary">For Organizations</Badge>
+    <motion.div
+      layout
+      transition={layoutTransition}
+      className="w-full max-w-5xl mx-auto grid md:grid-cols-2 gap-0 overflow-hidden rounded-2xl shadow-xl bg-white"
+    >
+      {/* Left Side - Brand Section */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="bg-zinc-900 text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden"
+      >
+        {/* Brand Background Effect */}
+        <BrandBackground variant="warm" intensity="medium" />
+        
+        <div className="relative z-10">
+          <div className="mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 mb-4">
+              <Sparkles className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-normal leading-tight mb-4">
+              Start managing <span className="italic">creators</span> today
+            </h1>
+            <p className="text-zinc-300 text-lg">
+              Join teams managing thousands of creator partnerships with Collab.
+            </p>
+          </div>
         </div>
-        <CardDescription>
-          Enter your organization details to get started
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+        
+        <div className="relative z-10 text-sm text-zinc-400">
+          <p>Built for creator first teams</p>
+        </div>
+      </motion.div>
+
+      {/* Right Side - Signup Form */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="p-8 md:p-12 bg-white max-h-[90vh] overflow-y-auto"
+      >
+        <div className="mb-6">
+          <h2 className="text-2xl font-semibold text-zinc-900 mb-2 tracking-tight">
+            Create your account
+          </h2>
+          <p className="text-zinc-600">
+            Get started with Collab today
+          </p>
+        </div>
+
+        <motion.div layout transition={layoutTransition} className="space-y-5">
           {/* Google Sign Up */}
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full border-zinc-300 hover:bg-zinc-50"
             onClick={handleGoogleSignup}
             disabled={isGoogleLoading || isLoading}
           >
@@ -261,10 +302,10 @@ export default function SignupPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <Separator />
+              <Separator className="bg-zinc-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-white px-2 text-zinc-500">
                 Or continue with email
               </span>
             </div>
@@ -272,20 +313,30 @@ export default function SignupPage() {
 
           {/* Email Sign Up Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-800">
-                {error}
-              </div>
-            )}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-3 text-sm bg-red-50 text-red-600 rounded-lg border border-red-200 overflow-hidden"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="space-y-2">
-              <Label htmlFor="companyName">Company Name</Label>
+              <Label htmlFor="companyName" className="text-zinc-900">Company Name</Label>
               <Input
                 id="companyName"
                 type="text"
                 placeholder="Acme Inc."
                 {...register('companyName')}
                 disabled={isLoading}
+                className="border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
               />
               {errors.companyName && (
                 <p className="text-sm text-red-500">
@@ -295,13 +346,14 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
+              <Label htmlFor="name" className="text-zinc-900">Full Name</Label>
               <Input
                 id="name"
                 type="text"
                 placeholder="John Doe"
                 {...register('name')}
                 disabled={isLoading}
+                className="border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
               />
               {errors.name && (
                 <p className="text-sm text-red-500">{errors.name.message}</p>
@@ -309,13 +361,14 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="email">Work Email</Label>
+              <Label htmlFor="email" className="text-zinc-900">Work Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="you@company.com"
                 {...register('email')}
                 disabled={isLoading}
+                className="border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
               />
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -326,7 +379,7 @@ export default function SignupPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-zinc-900">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -336,12 +389,12 @@ export default function SignupPage() {
                   onFocus={() => setPasswordFocus(true)}
                   onBlur={() => setPasswordFocus(false)}
                   disabled={isLoading}
-                  className="pr-10"
+                  className="pr-10 border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-900"
                   tabIndex={-1}
                 >
                   {showPassword ? (
@@ -358,17 +411,19 @@ export default function SignupPage() {
               )}
               
               {/* Password Requirements - Animated Dropdown */}
-              <div 
-                className={`overflow-hidden transition-all duration-300 ease-in-out ${
-                  passwordFocus ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0'
-                }`}
+              <motion.div
+                layout
+                initial={false}
+                animate={{ height: passwordFocus ? 'auto' : 0, opacity: passwordFocus ? 1 : 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
               >
                 <div className="flex flex-wrap gap-3 pt-2 text-xs">
                   <div className="flex items-center gap-1.5">
                     {passwordChecks.minLength ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
                     ) : (
-                      <XCircle className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                      <XCircle className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                     )}
                     <span className={passwordChecks.minLength ? 'text-green-600' : 'text-zinc-500'}>
                       8+ chars
@@ -376,9 +431,9 @@ export default function SignupPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {passwordChecks.hasUppercase ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
                     ) : (
-                      <XCircle className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                      <XCircle className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                     )}
                     <span className={passwordChecks.hasUppercase ? 'text-green-600' : 'text-zinc-500'}>
                       Uppercase
@@ -386,9 +441,9 @@ export default function SignupPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {passwordChecks.hasLowercase ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
                     ) : (
-                      <XCircle className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                      <XCircle className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                     )}
                     <span className={passwordChecks.hasLowercase ? 'text-green-600' : 'text-zinc-500'}>
                       Lowercase
@@ -396,20 +451,20 @@ export default function SignupPage() {
                   </div>
                   <div className="flex items-center gap-1.5">
                     {passwordChecks.hasNumber ? (
-                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 flex-shrink-0" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
                     ) : (
-                      <XCircle className="h-3.5 w-3.5 text-zinc-400 flex-shrink-0" />
+                      <XCircle className="h-3.5 w-3.5 text-zinc-400 shrink-0" />
                     )}
                     <span className={passwordChecks.hasNumber ? 'text-green-600' : 'text-zinc-500'}>
                       Number
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Label htmlFor="confirmPassword" className="text-zinc-900">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -417,12 +472,12 @@ export default function SignupPage() {
                   placeholder="••••••••"
                   {...register('confirmPassword')}
                   disabled={isLoading}
-                  className="pr-10"
+                  className="pr-10 border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-900"
                   tabIndex={-1}
                 >
                   {showConfirmPassword ? (
@@ -441,25 +496,26 @@ export default function SignupPage() {
 
             <Button
               type="submit"
-              className="w-full"
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg"
               disabled={isLoading || isGoogleLoading}
             >
               {isLoading ? 'Creating account...' : 'Create account'}
             </Button>
           </form>
-        </div>
-      </CardContent>
-      <CardFooter>
-        <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
-          Already have an account?{' '}
-          <Link
-            href="/login"
-            className="text-blue-600 hover:text-blue-500 font-medium"
-          >
-            Sign in
-          </Link>
-        </p>
-      </CardFooter>
-    </Card>
+
+          <div className="pt-4 border-t border-zinc-200">
+            <p className="text-sm text-center text-zinc-600">
+              Already have an account?{' '}
+              <Link
+                href="/login"
+                className="text-zinc-900 hover:text-zinc-700 font-medium underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }

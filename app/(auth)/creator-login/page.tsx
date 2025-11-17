@@ -10,9 +10,9 @@ import { authClient } from '@/lib/auth/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Eye, EyeOff } from 'lucide-react';
+import { BrandBackground } from '@/components/ui/brand-background';
+import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { Eye, EyeOff, Video } from 'lucide-react';
 
 export default function CreatorLoginPage() {
   const router = useRouter();
@@ -77,33 +77,87 @@ export default function CreatorLoginPage() {
     }
   };
 
+  const layoutTransition: Transition = {
+    type: 'spring',
+    stiffness: 140,
+    damping: 22,
+    mass: 0.8,
+  };
+
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2 mb-2">
-          <CardTitle className="text-2xl font-bold">Creator Portal</CardTitle>
-          <Badge variant="secondary">Content Creator</Badge>
-        </div>
-        <CardDescription>
-          Sign in to your creator account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-800">
-              {error}
+    <motion.div
+      layout
+      transition={layoutTransition}
+      className="w-full max-w-5xl mx-auto grid md:grid-cols-2 gap-0 overflow-hidden rounded-2xl shadow-xl bg-white"
+    >
+      {/* Left Side - Brand Section */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="bg-zinc-900 text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden"
+      >
+        {/* Brand Background Effect */}
+        <BrandBackground variant="cool" intensity="medium" />
+        
+        <div className="relative z-10">
+          <div className="mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 mb-4">
+              <Video className="h-6 w-6 text-white" />
             </div>
-          )}
+            <h1 className="text-3xl md:text-4xl font-serif font-normal leading-tight mb-4">
+              Creator <span className="italic">Portal</span>
+            </h1>
+            <p className="text-zinc-300 text-lg">
+              Access your dashboard, submit content, and track your performance with ease.
+            </p>
+          </div>
+        </div>
+        
+        <div className="relative z-10 text-sm text-zinc-400">
+          <p>Built for creator first teams</p>
+        </div>
+      </motion.div>
+
+      {/* Right Side - Login Form */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="p-8 md:p-12 bg-white"
+      >
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-zinc-900 mb-2 tracking-tight">
+            Sign in as Creator
+          </h2>
+          <p className="text-zinc-600">
+            Access your creator dashboard
+          </p>
+        </div>
+
+        <motion.form layout transition={layoutTransition} onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <AnimatePresence initial={false}>
+            {error && (
+              <motion.div
+                layout
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.2 }}
+                className="p-3 text-sm bg-red-50 text-red-600 rounded-lg border border-red-200 overflow-hidden"
+              >
+                {error}
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-zinc-900">Email</Label>
             <Input
               id="email"
               type="email"
               placeholder="you@example.com"
               {...register('email')}
               disabled={isLoading}
+              className="border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
             />
             {errors.email && (
               <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -112,10 +166,10 @@ export default function CreatorLoginPage() {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password" className="text-zinc-900">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500"
+                className="text-sm text-zinc-600 hover:text-zinc-900 underline"
               >
                 Forgot password?
               </Link>
@@ -127,12 +181,12 @@ export default function CreatorLoginPage() {
                 placeholder="••••••••"
                 {...register('password')}
                 disabled={isLoading}
-                className="pr-10"
+                className="pr-10 border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-900"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -147,19 +201,24 @@ export default function CreatorLoginPage() {
             )}
           </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading}>
+          <Button 
+            type="submit" 
+            className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg" 
+            disabled={isLoading}
+          >
             {isLoading ? 'Signing in...' : 'Sign in as Creator'}
           </Button>
-        </form>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-3">
-        <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
-          Admin user?{' '}
-          <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
-            Admin Login
-          </Link>
-        </p>
-      </CardFooter>
-    </Card>
+
+          <div className="pt-4 border-t border-zinc-200">
+            <p className="text-sm text-center text-zinc-600">
+              Admin user?{' '}
+              <Link href="/login" className="text-zinc-900 hover:text-zinc-700 font-medium underline">
+                Admin Login
+              </Link>
+            </p>
+          </div>
+        </motion.form>
+      </motion.div>
+    </motion.div>
   );
 }

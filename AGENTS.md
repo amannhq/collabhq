@@ -10,6 +10,79 @@
 - GraphQL (Apollo) for analytics only
 - React Hook Form + Zod for forms
 
+## Brand Guidelines (Collab)
+
+### Colors
+- **Brand Cream**: `#f3f1ea` or `bg-[#f3f1ea]` - Main background color
+- **Brand Dark**: `zinc-900` or `bg-zinc-900` - Primary dark (near black)
+- **Brand Dark Hover**: `zinc-800` or `hover:bg-zinc-800` - Hover state for dark elements
+- **Text Colors**: 
+  - Primary: `text-zinc-900`
+  - Secondary: `text-zinc-600`
+  - Muted: `text-zinc-500`
+  - Light/Inverted: `text-zinc-300`
+- **Borders**: `border-zinc-200` or `border-zinc-200/50` for subtle borders
+- **White**: Use for cards, forms, and contrast sections
+
+### Typography
+- **Headings**: Use `font-serif` with `font-normal` for elegant, editorial style
+  - Apply `italic` for emphasis (e.g., "Welcome to _Collab_")
+  - Sizes: `text-3xl` to `text-6xl` for hero/large headings
+  - Use `tracking-tight` for tighter letter spacing
+- **Body Text**: Default `font-sans` (Inter)
+  - Sizes: `text-base` to `text-lg`
+  - Line height: `leading-relaxed` or `leading-tight` based on context
+- **Labels/Small Text**: `text-sm` or `text-xs`
+
+### Components
+- **Buttons**: 
+  - Primary: `bg-zinc-900 hover:bg-zinc-800 text-white`
+  - Outline: `border-zinc-300 hover:bg-zinc-50`
+  - Border radius: `rounded-lg` or `rounded-xl`
+- **Cards**: `rounded-2xl shadow-xl bg-white`
+- **Inputs**: 
+  - Border: `border-zinc-300`
+  - Focus: `focus:border-zinc-900 focus:ring-zinc-900`
+- **Auth Pages**: Two-column layout with dark brand section on left, white form on right
+- **Spacing**: Generous padding (`p-8 md:p-12`) for breathing room
+
+### Design Principles
+- **Clean & Minimal**: Avoid clutter, use whitespace effectively
+- **Elegant & Professional**: Serif headings + sans body text
+- **Subtle Effects**: Use `opacity-5` for background patterns, `blur-3xl` for soft glows
+- **Consistent Rounding**: `rounded-lg` (buttons), `rounded-xl` (cards), `rounded-2xl` (large containers)
+- **Shadow Usage**: `shadow-xl` for elevated elements
+
+### CSS Variables (globals.css)
+```css
+--brand-cream: 243 241 234;
+--brand-dark: 24 24 27;
+--brand-dark-hover: 39 39 42;
+```
+
+### Usage Examples
+```tsx
+// Headings
+<h1 className="text-4xl font-serif font-normal">
+  Your creators, <span className="italic">seamlessly</span> connected
+</h1>
+
+// Buttons
+<Button className="bg-zinc-900 hover:bg-zinc-800 rounded-lg">
+  Get Started
+</Button>
+
+// Background
+<div className="min-h-screen bg-[#f3f1ea]">
+  {/* Content */}
+</div>
+
+// Cards
+<div className="rounded-2xl shadow-xl bg-white p-8">
+  {/* Card content */}
+</div>
+```
+
 ## Architecture Principles
 
 ### 1. Multi-Tenant Structure
