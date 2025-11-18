@@ -167,19 +167,19 @@ export function AcceptInvitation({ invitation }: AcceptInvitationProps) {
           <h3 className="font-semibold text-sm">What happens when you accept?</h3>
           <ul className="space-y-2">
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <span>Your creator account will be created instantly</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <span>You&apos;ll receive an email with your login credentials</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <span>You&apos;ll be added to the {invitation.projectName} project</span>
             </li>
             <li className="flex items-start gap-2 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
+              <CheckCircle2 className="w-4 h-4 text-primary mt-0.5 shrink-0" />
               <span>You can start submitting posts for tracking and review</span>
             </li>
           </ul>

@@ -20,4 +20,14 @@ export {
 export { auth } from './betterauth';
 
 // Client-side (re-export for convenience)
-export { authClient, useSession } from './client';
+export {
+  authClient,
+  useSession,
+  signIn,
+  signUp,
+  signOut,
+  changePassword,
+  resetPassword,
+  forgetPassword,
+  updateUser,
+} from './client';

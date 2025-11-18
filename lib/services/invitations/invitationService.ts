@@ -1,8 +1,7 @@
 import { randomBytes } from 'crypto';
-import connectDB from '@/lib/db/mongodb';
-import { Invitation, User } from '@/lib/db/models';
-import { sendEmail } from '@/lib/services/email/email-service';
-import { InvitationEmail } from '@/lib/services/email/templates/InvitationEmail';
+import { ensureDbConnection } from '@/lib/db/mongodb';
+import { Invitation, User, Organization, Project } from '@/lib/db/models';
+import { sendInvitationEmail as dispatchInvitationEmail } from '@/lib/services/email/email-service';
 import { createLogger } from '@/lib/utils/logger';
 
 const logger = createLogger('invitation-service');
@@ -38,7 +37,7 @@ interface VerifyInvitationResult {
  */
 export async function createInvitation(params: CreateInvitationParams) {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     const {
       email,
@@ -100,17 +99,32 @@ export async function createInvitation(params: CreateInvitationParams) {
       'Invitation created successfully'
     );
 
-    // Send invitation email
-    try {
-      await sendInvitationEmail(invitation);
-      logger.info({ invitationId: invitation._id, email }, 'Invitation email sent');
-    } catch (emailError) {
-      logger.error(
-        { error: emailError, invitationId: invitation._id },
-        'Failed to send invitation email'
+    // Fetch organization/project names for email branding
+    const [organization, project] = await Promise.all([
+      Organization.findById(organizationId)
+        .select('name slug')
+        .lean<{ name: string; slug: string } | null>(),
+      Project.findById(projectId)
+        .select('name')
+        .lean<{ name: string } | null>(),
+    ]);
+
+    // Send invitation email (non-blocking failure)
+    dispatchInvitationEmail({
+      email,
+      name,
+      token: invitation.token,
+      organizationId: organizationId,
+      organizationName: organization?.name || 'Your organization',
+      projectName: project?.name || 'Project',
+    })
+      .then(() => logger.info({ invitationId: invitation._id, email }, 'Invitation email sent'))
+      .catch((emailError) =>
+        logger.error(
+          { error: emailError, invitationId: invitation._id },
+          'Failed to send invitation email'
+        )
       );
-      // Don't throw - invitation is created, just log the email failure
-    }
 
     return {
       success: true,
@@ -132,7 +146,7 @@ export async function verifyInvitation(
   token: string
 ): Promise<VerifyInvitationResult> {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     logger.info({ token: token.substring(0, 8) + '...' }, 'Verifying invitation');
 
@@ -202,7 +216,7 @@ export async function verifyInvitation(
  */
 export async function acceptInvitation(token: string, userId: string) {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     logger.info({ token: token.substring(0, 8) + '...', userId }, 'Accepting invitation');
 
@@ -258,7 +272,7 @@ export async function acceptInvitation(token: string, userId: string) {
  */
 export async function resendInvitation(invitationId: string) {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     logger.info({ invitationId }, 'Resending invitation');
 
@@ -305,8 +319,14 @@ export async function resendInvitation(invitationId: string) {
       logger.info({ invitationId, newExpiresAt }, 'Extended invitation expiry');
     }
 
-    // Send email
-    await sendInvitationEmail(invitation);
+    await dispatchInvitationEmail({
+      email: invitation.email,
+      name: invitation.name,
+      token: invitation.token,
+      organizationId: invitation.organizationId._id.toString(),
+      organizationName: invitation.organizationId.name,
+      projectName: invitation.projectId.name,
+    });
 
     logger.info({ invitationId }, 'Invitation resent successfully');
 
@@ -328,7 +348,7 @@ export async function resendInvitation(invitationId: string) {
  */
 export async function cancelInvitation(invitationId: string) {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     logger.info({ invitationId }, 'Canceling invitation');
 
@@ -360,7 +380,7 @@ export async function cancelInvitation(invitationId: string) {
  */
 export async function getOrganizationInvitations(organizationId: string) {
   try {
-    await connectDB();
+    await ensureDbConnection();
 
     const invitations = await Invitation.find({ organizationId })
       .populate('projectId', 'name')
@@ -379,29 +399,4 @@ export async function getOrganizationInvitations(organizationId: string) {
       error: 'Failed to fetch invitations',
     };
   }
-}
-
-/**
- * Send invitation email (internal helper)
- */
-async function sendInvitationEmail(invitation: {
-  email: string;
-  name: string;
-  token: string;
-  organizationId: { _id: { toString(): string }; name: string };
-  projectId: { _id: { toString(): string }; name: string };
-  message?: string;
-}) {
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${invitation.token}`;
-
-  await sendEmail({
-    to: invitation.email,
-    subject: `You're invited to join ${invitation.organizationId.name}`,
-    react: InvitationEmail({
-      name: invitation.name,
-      organizationName: invitation.organizationId.name,
-      projectName: invitation.projectId.name,
-      inviteUrl,
-    }),
-  });
 }

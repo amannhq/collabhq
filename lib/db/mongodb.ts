@@ -136,6 +136,24 @@ async function connectDB(): Promise<typeof mongoose> {
 }
 
 /**
+ * Ensure we have an active MongoDB connection without duplicating logic
+ */
+async function ensureDbConnection(): Promise<typeof mongoose> {
+  const state = mongoose.connection.readyState;
+
+  if (state === ConnectionState.CONNECTED) {
+    return mongoose;
+  }
+
+  if (state === ConnectionState.CONNECTING && cached?.promise) {
+    await cached.promise;
+    return mongoose;
+  }
+
+  return connectDB();
+}
+
+/**
  * Disconnect from MongoDB
  * Useful for cleanup in serverless environments
  */
@@ -323,4 +341,10 @@ if (process.env.NODE_ENV !== 'development') {
 }
 
 export default connectDB;
-export { disconnectDB, getConnectionStatus, healthCheck, ConnectionState };
+export {
+  disconnectDB,
+  getConnectionStatus,
+  healthCheck,
+  ConnectionState,
+  ensureDbConnection,
+};

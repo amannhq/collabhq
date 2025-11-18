@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import connectDB from '@/lib/db/mongodb';
+import { ensureDbConnection } from '@/lib/db/mongodb';
 import { User } from '@/lib/db/models';
 import { auth } from '@/lib/auth/betterauth';
 import { createLogger } from '@/lib/utils/logger';
@@ -9,8 +9,6 @@ const logger = createLogger('change-password-api');
 
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-
     const session = await getSession();
     if (!session?.user) {
       return NextResponse.json(
@@ -19,8 +17,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
-    const { currentPassword, newPassword } = body;
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid request payload' },
+        { status: 400 }
+      );
+    }
+
+    const currentPassword = typeof body.currentPassword === 'string' ? body.currentPassword : undefined;
+    const newPassword = typeof body.newPassword === 'string' ? body.newPassword : undefined;
 
     if (!currentPassword || !newPassword) {
       return NextResponse.json(
@@ -57,14 +63,14 @@ export async function POST(request: NextRequest) {
       headers: request.headers,
     });
 
-    if (!result) {
+    if (!result || (typeof result === 'object' && 'success' in result && !result.success)) {
       return NextResponse.json(
         { success: false, error: 'Failed to change password. Please check your current password.' },
         { status: 400 }
       );
     }
 
-    // Update requirePasswordChange flag
+    await ensureDbConnection();
     await User.findByIdAndUpdate(session.user.id, {
       requirePasswordChange: false,
     });

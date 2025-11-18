@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createLogger } from '@/lib/utils/logger';
-import connectDB from '@/lib/db/mongodb';
-import { Organization, User } from '@/lib/db/models';
+import { ensureDbConnection } from '@/lib/db/mongodb';
+import { User } from '@/lib/db/models';
 import { auth } from '@/lib/auth/betterauth';
+import { createOrganizationForUser } from '@/lib/auth/organization-helpers';
 import { extractCompanyFromEmail } from '@/lib/utils/email-validation';
-import { initializeDefaultTemplates } from '@/lib/utils/email-template-utils';
-import mongoose from 'mongoose';
 
 const logger = createLogger('setup-organization-api');
 
@@ -30,7 +29,7 @@ export async function POST(request: NextRequest) {
     const userId = session.user.id;
     const userEmail = session.user.email;
 
-    await connectDB();
+    await ensureDbConnection();
 
     // Note: We trust that the client only calls this after successful email verification
     // The verifyEmail endpoint sets emailVerified to true before this is called
@@ -56,77 +55,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate unique slug
-    const baseSlug = companyName
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '');
+    const organizationResult = await createOrganizationForUser(
+      userId,
+      userEmail,
+      companyName
+    );
 
-    let slug = baseSlug;
-    let counter = 1;
-
-    while (await Organization.findOne({ slug })) {
-      slug = `${baseSlug}-${counter}`;
-      counter++;
+    if (!organizationResult) {
+      logger.error({ userId }, 'Failed to create organization for user');
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Failed to create organization. Please try again.',
+        },
+        { status: 500 }
+      );
     }
-
-    // Create organization
-    const organization = await Organization.create({
-      name: companyName,
-      slug,
-      ownerId: userId,
-      settings: {
-        notificationEmail: userEmail,
-      },
-      subscription: {
-        plan: 'free',
-        status: 'trial',
-        startDate: new Date(),
-        expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), // 14-day trial
-      },
-    });
-
-    // Update user with organizationId
-    await User.findByIdAndUpdate(userId, {
-      organizationId: organization._id,
-    });
 
     logger.info(
       {
         userId,
-        organizationId: organization._id.toString(),
-        slug,
+        organizationId: organizationResult.organizationId,
+        slug: organizationResult.slug,
       },
       'Organization created after email verification'
     );
 
-    // Initialize default email templates
-    try {
-      await initializeDefaultTemplates(
-        organization._id.toString(),
-        {
-          primaryColor: organization.settings?.primaryColor,
-          secondaryColor: organization.settings?.secondaryColor,
-          logoUrl: organization.settings?.logo,
-        }
-      );
-      logger.info(
-        { organizationId: organization._id.toString() },
-        'Default email templates initialized'
-      );
-    } catch (templateError) {
-      logger.error(
-        { error: templateError, organizationId: organization._id.toString() },
-        'Failed to initialize default email templates'
-      );
-    }
-
+    // Fetch organization name (helper already returns name)
     return NextResponse.json({
       success: true,
       data: {
-        organizationId: organization._id.toString(),
-        slug: organization.slug,
-        name: organization.name,
+        organizationId: organizationResult.organizationId,
+        slug: organizationResult.slug,
+        name: organizationResult.name,
       },
     });
   } catch (error) {
