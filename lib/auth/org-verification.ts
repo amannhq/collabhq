@@ -4,9 +4,12 @@
  */
 
 import { unstable_cache } from 'next/cache';
-import connectDB from '@/lib/db/mongodb';
+import { ensureDbConnection } from '@/lib/db/mongodb';
 import { Organization } from '@/lib/db/models';
 import type { IOrganization } from '@/lib/db/models/Organization';
+import { createLogger } from '@/lib/utils/logger';
+
+const logger = createLogger('org-verification');
 
 interface OrgVerificationResult {
   organizationId: string;
@@ -23,7 +26,7 @@ export async function verifyOrganizationAccess(
   userId: string
 ): Promise<OrgVerificationResult | null> {
   try {
-    await connectDB();
+    await ensureDbConnection();
     
     const organization = await Organization.findOne({ slug: orgSlug })
       .select('_id ownerId name slug')
@@ -41,7 +44,10 @@ export async function verifyOrganizationAccess(
       organization,
     };
   } catch (error) {
-    console.error('Error verifying organization access:', error);
+    logger.error(
+      { error, orgSlug, userId },
+      'Error verifying organization access'
+    );
     return null;
   }
 }
@@ -50,13 +56,16 @@ export async function verifyOrganizationAccess(
  * Cached version - revalidates every 5 minutes
  * Use this in server components for better performance
  */
-export const getCachedOrganizationAccess = unstable_cache(
-  async (orgSlug: string, userId: string) => {
-    return verifyOrganizationAccess(orgSlug, userId);
-  },
-  ['org-access'],
-  {
-    revalidate: 300, // 5 minutes
-    tags: ['organization'],
-  }
-);
+export function getCachedOrganizationAccess(
+  orgSlug: string,
+  userId: string
+): Promise<OrgVerificationResult | null> {
+  return unstable_cache(
+    async () => verifyOrganizationAccess(orgSlug, userId),
+    ['org-access', orgSlug, userId],
+    {
+      revalidate: 300, // 5 minutes
+      tags: [`organization:${orgSlug}`],
+    }
+  )();
+}

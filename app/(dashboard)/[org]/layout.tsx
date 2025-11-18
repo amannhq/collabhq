@@ -71,11 +71,19 @@ export default async function OrganizationLayout({
 
   // Pass all data to client component
   // Client component handles navigation without server queries
+  const clientSafeSession = {
+    user: {
+      id: session.user.id,
+      name: session.user.name,
+      email: session.user.email,
+    },
+  };
+
   return (
     <ClientLayout
       orgSlug={resolvedParams.org}
       organization={serializedOrganization}
-      session={session}
+      session={clientSafeSession}
       pendingPostsCount={pendingPostsCount}
     >
       {children}

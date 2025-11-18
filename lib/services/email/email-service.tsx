@@ -5,13 +5,116 @@ import { createLogger } from '@/lib/utils/logger';
 import { InvitationEmail } from './templates/InvitationEmail';
 import { WelcomeEmail } from './templates/WelcomeEmail';
 import { BaseEmailTemplate } from './templates/BaseEmailTemplate';
-import connectDB from '@/lib/db/mongodb';
+import { ensureDbConnection } from '@/lib/db/mongodb';
 import { EmailTemplate, Organization } from '@/lib/db/models';
+import type { IOrganization } from '@/lib/db/models/Organization';
 
 const logger = createLogger('email-service');
 
 // Initialize Resend
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
+const DEFAULT_FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@collab.so';
+const TEMPLATE_CACHE_TTL_MS =
+  Number(process.env.EMAIL_TEMPLATE_CACHE_TTL_MS) || 5 * 60 * 1000; // 5 minutes
+
+type BrandingConfig = {
+  primaryColor: string;
+  secondaryColor: string;
+  logoUrl?: string;
+  fontFamily: string;
+};
+
+const DEFAULT_BRANDING: BrandingConfig = {
+  primaryColor: '#667eea',
+  secondaryColor: '#764ba2',
+  logoUrl: undefined,
+  fontFamily:
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+};
+
+interface TemplateBranding {
+  primaryColor?: string;
+  secondaryColor?: string;
+  logoUrl?: string;
+  fontFamily?: string;
+}
+
+interface TemplateContent {
+  heading?: string;
+  body: string;
+  ctaText?: string;
+  ctaUrl?: string;
+  footerText?: string;
+}
+
+interface CachedTemplateResult {
+  template: {
+    _id: string;
+    branding?: TemplateBranding;
+    subject: string;
+    previewText?: string;
+    content: TemplateContent;
+  } | null;
+  branding: BrandingConfig;
+  organization: Pick<IOrganization, 'settings'> | null;
+}
+
+const templateCache = new Map<string, { expiresAt: number; value: CachedTemplateResult }>();
+const templateFetchPromises = new Map<string, Promise<CachedTemplateResult>>();
+
+const buildTemplateCacheKey = (organizationId: string, templateSlug: string) =>
+  `${organizationId}:${templateSlug}`;
+
+function resolveBranding(
+  organization: Pick<IOrganization, 'settings'> | null,
+  templateBranding?: TemplateBranding
+): BrandingConfig {
+  if (templateBranding) {
+    return {
+      primaryColor: templateBranding.primaryColor || DEFAULT_BRANDING.primaryColor,
+      secondaryColor: templateBranding.secondaryColor || DEFAULT_BRANDING.secondaryColor,
+      logoUrl: templateBranding.logoUrl || DEFAULT_BRANDING.logoUrl,
+      fontFamily: templateBranding.fontFamily || DEFAULT_BRANDING.fontFamily,
+    };
+  }
+
+  return {
+    primaryColor: organization?.settings?.primaryColor || DEFAULT_BRANDING.primaryColor,
+    secondaryColor: organization?.settings?.secondaryColor || DEFAULT_BRANDING.secondaryColor,
+    logoUrl: organization?.settings?.logo || DEFAULT_BRANDING.logoUrl,
+    fontFamily: DEFAULT_BRANDING.fontFamily,
+  };
+}
+
+function setTemplateCache(key: string, value: CachedTemplateResult) {
+  templateCache.set(key, {
+    expiresAt: Date.now() + TEMPLATE_CACHE_TTL_MS,
+    value,
+  });
+}
+
+function getTemplateCache(key: string): CachedTemplateResult | null {
+  const cached = templateCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.value;
+  }
+
+  if (cached) {
+    templateCache.delete(key);
+  }
+  return null;
+}
+
+async function trackTemplateUsage(templateId: string) {
+  try {
+    await EmailTemplate.findByIdAndUpdate(templateId, {
+      $inc: { usageCount: 1 },
+      lastUsedAt: new Date(),
+    });
+  } catch (error) {
+    logger.warn({ error, templateId }, 'Failed to track template usage');
+  }
+}
 
 interface SendEmailParams {
   to: string;
@@ -25,6 +128,8 @@ interface SendEmailParams {
  */
 export async function sendEmail({ to, subject, react, from }: SendEmailParams) {
   try {
+    const fromAddress = from || DEFAULT_FROM_EMAIL;
+
     // Check if Resend is configured
     if (!resend) {
       logger.warn({}, 'Resend API key not configured, email will only be logged');
@@ -33,7 +138,7 @@ export async function sendEmail({ to, subject, react, from }: SendEmailParams) {
       const html = await render(react);
       
       console.log('\n📧 EMAIL DEBUG (Development Mode):');
-      console.log(`From: ${from || process.env.RESEND_FROM_EMAIL || 'noreply@yourapp.com'}`);
+      console.log(`From: ${fromAddress}`);
       console.log(`To: ${to}`);
       console.log(`Subject: ${subject}`);
       console.log(`Preview: ${html.substring(0, 200)}...`);
@@ -44,7 +149,7 @@ export async function sendEmail({ to, subject, react, from }: SendEmailParams) {
 
     // Send email via Resend
     const { data, error } = await resend.emails.send({
-      from: from || process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+      from: fromAddress,
       to,
       subject,
       react,
@@ -78,68 +183,72 @@ async function getTemplateWithBranding(
   organizationId: string,
   templateSlug: string
 ) {
-  try {
-    await connectDB();
-
-    // Get organization for default branding
-    const organization = await Organization.findById(organizationId).lean() as {
-      settings?: {
-        primaryColor?: string;
-        secondaryColor?: string;
-        logo?: string;
-      };
-    } | null;
-    
-    // Try to get custom template
-    const customTemplate = await EmailTemplate.findOne({
-      organizationId,
-      templateSlug,
-      isActive: true,
-    }).lean() as {
-      _id: { toString(): string };
-      branding?: {
-        primaryColor?: string;
-        secondaryColor?: string;
-        logoUrl?: string;
-        fontFamily?: string;
-      };
-      subject: string;
-      previewText?: string;
-      content: {
-        heading?: string;
-        body: string;
-        ctaText?: string;
-        ctaUrl?: string;
-        footerText?: string;
-      };
-    } | null;
-
-    // Use custom template if exists, otherwise use organization branding or defaults
-    const branding = customTemplate?.branding || {
-      primaryColor: organization?.settings?.primaryColor || '#667eea',
-      secondaryColor: organization?.settings?.secondaryColor || '#764ba2',
-      logoUrl: organization?.settings?.logo || undefined,
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    };
-
-    return {
-      template: customTemplate,
-      branding,
-      organization,
-    };
-  } catch (error) {
-    logger.error({ error, organizationId, templateSlug }, 'Error getting template');
-    return {
-      template: null,
-      branding: {
-        primaryColor: '#667eea',
-        secondaryColor: '#764ba2',
-        logoUrl: undefined,
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-      },
-      organization: null,
-    };
+  const cacheKey = buildTemplateCacheKey(organizationId, templateSlug);
+  const cached = getTemplateCache(cacheKey);
+  if (cached) {
+    return cached;
   }
+
+  if (templateFetchPromises.has(cacheKey)) {
+    return templateFetchPromises.get(cacheKey)!;
+  }
+
+  const fetchPromise = (async () => {
+    try {
+      await ensureDbConnection();
+
+      const organization = await Organization.findById(organizationId)
+        .select('settings')
+        .lean<Pick<IOrganization, 'settings'> | null>();
+
+      const customTemplate = await EmailTemplate.findOne({
+        organizationId,
+        templateSlug,
+        isActive: true,
+      })
+        .select('branding subject previewText content')
+        .lean<{
+          _id: string;
+          branding?: TemplateBranding;
+          subject: string;
+          previewText?: string;
+          content: TemplateContent;
+        } | null>();
+
+      const template = customTemplate
+        ? {
+            _id: customTemplate._id.toString(),
+            branding: customTemplate.branding,
+            subject: customTemplate.subject,
+            previewText: customTemplate.previewText,
+            content: customTemplate.content,
+          }
+        : null;
+
+      const branding = resolveBranding(organization, template?.branding);
+
+      const result: CachedTemplateResult = {
+        template,
+        branding,
+        organization,
+      };
+
+      setTemplateCache(cacheKey, result);
+      return result;
+    } catch (error) {
+      logger.error({ error, organizationId, templateSlug }, 'Error getting template');
+      return {
+        template: null,
+        branding: DEFAULT_BRANDING,
+        organization: null,
+      };
+    }
+  })().finally(() => {
+    templateFetchPromises.delete(cacheKey);
+  });
+
+  templateFetchPromises.set(cacheKey, fetchPromise);
+  return fetchPromise;
 }
 
 /**
@@ -203,7 +312,7 @@ export async function sendInvitationEmail({
 
     emailComponent = (
       <BaseEmailTemplate
-        branding={template.branding}
+        branding={template.branding ?? branding}
         content={{
           heading,
           body: bodyContent,
@@ -215,11 +324,7 @@ export async function sendInvitationEmail({
       />
     );
 
-    // Update template usage
-    await EmailTemplate.findByIdAndUpdate(template._id, {
-      $inc: { usageCount: 1 },
-      lastUsedAt: new Date(),
-    });
+    void trackTemplateUsage(template._id);
   } else {
     // Use default template
     emailComponent = (
@@ -288,7 +393,7 @@ export async function sendWelcomeEmail({
 
     emailComponent = (
       <BaseEmailTemplate
-        branding={template.branding}
+        branding={template.branding ?? branding}
         content={{
           heading,
           body: bodyContent,
@@ -300,11 +405,7 @@ export async function sendWelcomeEmail({
       />
     );
 
-    // Update template usage
-    await EmailTemplate.findByIdAndUpdate(template._id, {
-      $inc: { usageCount: 1 },
-      lastUsedAt: new Date(),
-    });
+    void trackTemplateUsage(template._id);
   } else {
     // Use default template
     emailComponent = (

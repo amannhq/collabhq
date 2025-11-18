@@ -1,11 +1,3 @@
-// lib/utils/logger.ts
-/**
- * Simple console-based logger for Bun compatibility
- * 
- * NOTE: Removed Pino because it uses worker_threads features not supported by Bun
- * This is a lightweight alternative that works in both Node.js and Bun environments
- */
-
 // Detect if we're running in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
@@ -23,10 +15,192 @@ const LOG_LEVELS = {
   fatal: 60,
 } as const;
 
-const currentLogLevel = LOG_LEVELS[LOG_LEVEL as keyof typeof LOG_LEVELS] || LOG_LEVELS.info;
+type LogLevel = keyof typeof LOG_LEVELS;
+type ConsoleMethod = 'log' | 'warn' | 'error';
+
+const CONSOLE_METHOD_MAP: Record<LogLevel, ConsoleMethod> = {
+  trace: 'log',
+  debug: 'log',
+  info: 'log',
+  warn: 'warn',
+  error: 'error',
+  fatal: 'error',
+};
+
+const currentLogLevel = LOG_LEVELS[LOG_LEVEL as LogLevel] || LOG_LEVELS.info;
+
+type LogMessage = {
+  level: LogLevel;
+  context: Record<string, unknown>;
+  obj: Record<string, unknown>;
+  msg?: string;
+};
+
+type WorkerThreadsModule = typeof import('worker_threads');
+type WorkerInstance = InstanceType<WorkerThreadsModule['Worker']>;
+
+let workerThreadsModule: WorkerThreadsModule | null | undefined;
+let workerThreadsPromise: Promise<WorkerThreadsModule | null> | null = null;
+let logWorker: WorkerInstance | null = null;
+let workerReady = false;
+const pendingMessages: LogMessage[] = [];
+
+const workerConsoleMapLiteral = JSON.stringify(CONSOLE_METHOD_MAP);
+
+const workerScript = `
+const { parentPort } = require('worker_threads');
+const CONSOLE_METHOD_MAP = ${workerConsoleMapLiteral};
+
+const serializeLog = (level, context, obj, msg) => {
+  const logData = {
+    level,
+    time: new Date().toISOString(),
+    ...context,
+    ...obj,
+  };
+
+  if (msg) {
+    logData.msg = msg;
+  }
+
+  return JSON.stringify(logData);
+};
+
+parentPort.on('message', (message) => {
+  const { level, context, obj, msg } = message;
+  const method = CONSOLE_METHOD_MAP[level] || 'log';
+  console[method](serializeLog(level, context, obj, msg));
+});
+`;
+
+const serializeLog = (
+  level: LogLevel,
+  context: Record<string, unknown>,
+  obj: Record<string, unknown>,
+  msg?: string,
+) => {
+  const logData: Record<string, unknown> = {
+    level,
+    time: new Date().toISOString(),
+    ...context,
+    ...obj,
+  };
+
+  if (msg) {
+    logData.msg = msg;
+  }
+
+  return JSON.stringify(logData);
+};
+
+const emitLogSynchronously = (payload: LogMessage) => {
+  const method: ConsoleMethod = CONSOLE_METHOD_MAP[payload.level] ?? 'log';
+  console[method](serializeLog(payload.level, payload.context, payload.obj, payload.msg));
+};
+
+const attachWorkerHandlers = (worker: WorkerInstance) => {
+  workerReady = false;
+
+  worker.once('online', () => {
+    workerReady = true;
+    while (pendingMessages.length > 0) {
+      const nextMessage = pendingMessages.shift();
+      if (nextMessage) {
+        worker.postMessage(nextMessage);
+      }
+    }
+  });
+
+  worker.on('error', (error) => {
+    workerReady = false;
+    logWorker = null;
+    console.error('[logger] worker error', error);
+    const queued = pendingMessages.splice(0);
+    queued.forEach((message) => emitLogSynchronously(message));
+  });
+
+  worker.on('exit', () => {
+    workerReady = false;
+    logWorker = null;
+    const queued = pendingMessages.splice(0);
+    queued.forEach((message) => emitLogSynchronously(message));
+  });
+};
+
+const instantiateWorker = (mod: WorkerThreadsModule): WorkerInstance => {
+  const worker = new mod.Worker(workerScript, { eval: true });
+  attachWorkerHandlers(worker);
+  return worker;
+};
+
+const ensureWorker = (): WorkerInstance | null => {
+  if (isBrowser) {
+    return null;
+  }
+
+  if (logWorker) {
+    return logWorker;
+  }
+
+  if (typeof workerThreadsModule !== 'undefined') {
+    if (workerThreadsModule) {
+      logWorker = instantiateWorker(workerThreadsModule);
+      return logWorker;
+    }
+    return null;
+  }
+
+  if (!workerThreadsPromise) {
+    workerThreadsPromise = import('worker_threads')
+      .then((mod) => mod as WorkerThreadsModule)
+      .catch(() => null)
+      .finally(() => {
+        workerThreadsPromise = null;
+      });
+
+    workerThreadsPromise.then((mod) => {
+      workerThreadsModule = mod ?? null;
+      if (!mod) {
+        const queued = pendingMessages.splice(0);
+        queued.forEach((message) => emitLogSynchronously(message));
+        return;
+      }
+
+      if (!logWorker) {
+        logWorker = instantiateWorker(mod);
+      }
+    });
+  }
+
+  return null;
+};
+
+const postToWorker = (payload: LogMessage): boolean => {
+  const worker = ensureWorker();
+  if (!worker) {
+    const workerInitPending =
+      !isBrowser &&
+      (typeof workerThreadsModule === 'undefined' || workerThreadsPromise !== null);
+
+    if (workerInitPending) {
+      pendingMessages.push(payload);
+      return true;
+    }
+
+    return false;
+  }
+
+  if (workerReady) {
+    worker.postMessage(payload);
+  } else {
+    pendingMessages.push(payload);
+  }
+
+  return true;
+};
 
 /**
- * Simple logger class that outputs to console
+ * Simple logger class that outputs to console without blocking
  * Compatible with both Bun and Node.js runtimes
  */
 class Logger {
@@ -36,20 +210,23 @@ class Logger {
     this.baseContext = context;
   }
 
-  private shouldLog(level: keyof typeof LOG_LEVELS): boolean {
+  private shouldLog(level: LogLevel): boolean {
     return LOG_LEVELS[level] >= currentLogLevel;
   }
 
-  private formatLog(level: string, obj: Record<string, unknown>, msg?: string): string {
-    const timestamp = new Date().toISOString();
-    const logData = {
+  private logWithLevel(level: LogLevel, obj: Record<string, unknown>, msg?: string) {
+    if (!this.shouldLog(level)) return;
+
+    const payload: LogMessage = {
       level,
-      time: timestamp,
-      ...this.baseContext,
-      ...obj,
-      ...(msg && { msg }),
+      context: { ...this.baseContext },
+      obj: { ...obj },
+      msg,
     };
-    return JSON.stringify(logData);
+
+    if (!postToWorker(payload)) {
+      emitLogSynchronously(payload);
+    }
   }
 
   child(context: Record<string, unknown>): Logger {
@@ -59,34 +236,28 @@ class Logger {
     });
   }
 
-  trace(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('trace')) return;
-    console.log(this.formatLog('trace', obj, msg));
+  trace(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('trace', obj, msg);
   }
 
-  debug(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('debug')) return;
-    console.log(this.formatLog('debug', obj, msg));
+  debug(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('debug', obj, msg);
   }
 
-  info(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('info')) return;
-    console.log(this.formatLog('info', obj, msg));
+  info(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('info', obj, msg);
   }
 
-  warn(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('warn')) return;
-    console.warn(this.formatLog('warn', obj, msg));
+  warn(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('warn', obj, msg);
   }
 
-  error(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('error')) return;
-    console.error(this.formatLog('error', obj, msg));
+  error(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('error', obj, msg);
   }
 
-  fatal(obj: Record<string, unknown>, msg?: string) {
-    if (!this.shouldLog('fatal')) return;
-    console.error(this.formatLog('fatal', obj, msg));
+  fatal(obj: Record<string, unknown> = {}, msg?: string) {
+    this.logWithLevel('fatal', obj, msg);
   }
 }
 

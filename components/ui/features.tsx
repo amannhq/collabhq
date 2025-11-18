@@ -47,7 +47,7 @@ export function Features() {
                         <CardContent className="mt-auto h-fit p-0 pb-4 sm:pb-0">
                             <div className="relative mb-4 sm:mb-0">
                                 <div className="absolute -inset-6 [background:radial-gradient(50%_75%_at_75%_50%,transparent,#ffffff_100%)]"></div>
-                                <div className="aspect-[4/3] overflow-hidden rounded-r-lg border border-zinc-200">
+                                <div className="aspect-4/3 overflow-hidden rounded-r-lg border border-zinc-200">
                                     <img
                                         src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=900&fit=crop&q=80"
                                         className="w-full h-full object-cover"

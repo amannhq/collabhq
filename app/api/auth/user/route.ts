@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import connectDB from '@/lib/db/mongodb';
+import { ensureDbConnection } from '@/lib/db/mongodb';
 import { User } from '@/lib/db/models';
 import { createLogger } from '@/lib/utils/logger';
 
@@ -17,18 +17,18 @@ export async function GET() {
       );
     }
 
-    await connectDB();
+    await ensureDbConnection();
     
-    const user = await User.findOne({ email: session.user.email })
+    const user = await User.findById(session.user.id)
       .select('_id email name role organizationId creatorProfile')
-      .lean() as {
+      .lean<{
         _id: { toString(): string };
         email: string;
         name: string;
         role: string;
         organizationId?: { toString(): string };
-        creatorProfile?: any;
-      } | null;
+        creatorProfile?: unknown;
+      }>();
     
     if (!user) {
       logger.warn({ email: session.user.email }, 'User not found');
