@@ -3,11 +3,11 @@ import { BarChart3, Users, FileCheck, TrendingUp, Shield, Zap } from 'lucide-rea
 
 export function Features() {
     return (
-        <section className="bg-white py-8 md:py-12">
+        <section className="bg-white py-12 md:py-16 lg:py-20">
             <div className="mx-auto max-w-5xl px-6">
-                <div className="text-center mb-8">
-                    <h3 className="text-2xl sm:text-3xl font-bold mb-3 text-zinc-900">Built for modern teams</h3>
-                    <p className="text-zinc-600 max-w-2xl mx-auto text-base sm:text-lg">
+                <div className="text-center mb-12">
+                    <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-normal mb-4 text-zinc-900">Built for modern teams</h3>
+                    <p className="text-zinc-600 max-w-2xl mx-auto text-base sm:text-lg md:text-xl leading-relaxed">
                         Everything you need to manage creator partnerships at scale
                     </p>
                 </div>

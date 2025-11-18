@@ -1,12 +1,12 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+// import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Hero } from "@/components/ui/hero";
 import { Features } from "@/components/ui/features";
 import { Pricing } from "@/components/ui/pricing";
-import type { PricingTier } from "@/components/ui/pricing";
+// import type { PricingTier } from "@/components/ui/pricing";
 import { BarChart3, Users, Sparkles } from "lucide-react";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -53,11 +53,11 @@ export default async function Home() {
             </h1>
           </div>
           <div className="flex flex-row items-center gap-2 sm:gap-3">
-            <Button variant="ghost" asChild className="whitespace-nowrap">
+            {/* <Button variant="ghost" asChild className="whitespace-nowrap">
               <Link href="/login">Login</Link>
-            </Button>
+            </Button> */}
             <Button asChild className="whitespace-nowrap bg-zinc-900 hover:bg-zinc-800">
-              <Link href="/signup">Get Started</Link>
+              <Link href="/signup">Join the waitlist</Link>
             </Button>
           </div>
         </nav>
@@ -76,7 +76,7 @@ export default async function Home() {
             </div>
           }
           subtitle="Collab brings your creator partnerships, content tracking, and performance metrics together so you can focus on growing results, not managing spreadsheets"
-          ctaText="Get started free"
+          ctaText="Join the waitlist"
           ctaLink="/signup"
           mockupImage={{
             src: "/images/mockup.avif",
@@ -174,16 +174,16 @@ export default async function Home() {
                     asChild
                     className="w-full bg-white text-zinc-900 hover:bg-zinc-100 px-8 py-6 text-base sm:w-auto sm:text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all"
                   >
-                    <Link href="/signup">Start Free Trial</Link>
+                    <Link href="/signup">Join the waitlist</Link>
                   </Button>
-                  <Button
+                  {/* <Button
                     size="lg"
                     variant="ghost"
                     asChild
                     className="w-full border-2 border-zinc-700 text-white hover:bg-zinc-800 hover:border-zinc-600 px-8 py-6 text-base sm:w-auto sm:text-lg font-medium rounded-xl transition-all"
                   >
                     <Link href="/login">Sign In</Link>
-                  </Button>
+                  </Button> */}
                 </div>
               </div>
             </div>

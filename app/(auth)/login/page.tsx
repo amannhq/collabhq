@@ -10,10 +10,10 @@ import { authClient } from '@/lib/auth/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff } from 'lucide-react';
+import { BrandBackground } from '@/components/ui/brand-background';
+import { motion, AnimatePresence, type Transition } from 'framer-motion';
+import { Eye, EyeOff, Users } from 'lucide-react';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -106,24 +106,68 @@ export default function LoginPage() {
     }
   };
 
+  const layoutTransition: Transition = {
+    type: 'spring',
+    stiffness: 140,
+    damping: 22,
+    mass: 0.8,
+  };
+
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <div className="flex items-center gap-2 mb-2">
-          <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-          <Badge variant="secondary">Creator Tracker</Badge>
+    <motion.div
+      layout
+      transition={layoutTransition}
+      className="w-full max-w-5xl mx-auto grid md:grid-cols-2 gap-0 overflow-hidden rounded-2xl shadow-xl bg-white"
+    >
+      {/* Left Side - Brand Section */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="bg-zinc-900 text-white p-8 md:p-12 flex flex-col justify-between relative overflow-hidden"
+      >
+        {/* Brand Background Effect */}
+        <BrandBackground variant="default" intensity="medium" />
+        
+        <div className="relative z-10">
+          <div className="mb-8">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-white/10 mb-4">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <h1 className="text-3xl md:text-4xl font-serif font-normal leading-tight mb-4">
+              Welcome back to <span className="italic">Collab</span>
+            </h1>
+            <p className="text-zinc-300 text-lg">
+              Manage your creator partnerships and track performance seamlessly.
+            </p>
+          </div>
         </div>
-        <CardDescription>
-          Sign in to your account to continue
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+        
+        <div className="relative z-10 text-sm text-zinc-400">
+          <p>Built for creator first teams</p>
+        </div>
+      </motion.div>
+
+      {/* Right Side - Login Form */}
+      <motion.div
+        layout
+        transition={layoutTransition}
+        className="p-8 md:p-12 bg-white"
+      >
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-zinc-900 mb-2 tracking-tight">
+            Sign in to your account
+          </h2>
+          <p className="text-zinc-600">
+            Continue managing your creator operations
+          </p>
+        </div>
+
+        <motion.div layout transition={layoutTransition} className="space-y-5">
           {/* Google Sign In */}
           <Button
             type="button"
             variant="outline"
-            className="w-full"
+            className="w-full border-zinc-300 hover:bg-zinc-50"
             onClick={handleGoogleSignIn}
             disabled={isGoogleLoading || isLoading}
           >
@@ -150,93 +194,108 @@ export default function LoginPage() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <Separator />
+              <Separator className="bg-zinc-200" />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">
+              <span className="bg-white px-2 text-zinc-500">
                 Or continue with email
               </span>
             </div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <div className="p-3 text-sm bg-red-50 dark:bg-red-950/50 text-red-600 dark:text-red-400 rounded-md border border-red-200 dark:border-red-800">
-              {error}
-            </div>
-          )}
+            <AnimatePresence initial={false}>
+              {error && (
+                <motion.div
+                  layout
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="p-3 text-sm bg-red-50 text-red-600 rounded-lg border border-red-200 overflow-hidden"
+                >
+                  {error}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="you@example.com"
-              {...register('email')}
-              disabled={isLoading}
-            />
-            {errors.email && (
-              <p className="text-sm text-red-500">{errors.email.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password">Password</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-blue-600 hover:text-blue-500"
-              >
-                Forgot password?
-              </Link>
-            </div>
-            <div className="relative">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-zinc-900">Email</Label>
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                {...register('password')}
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                {...register('email')}
                 disabled={isLoading}
-                className="pr-10"
+                className="border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300"
-                tabIndex={-1}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" />
-                ) : (
-                  <Eye className="h-4 w-4" />
-                )}
-              </button>
+              {errors.email && (
+                <p className="text-sm text-red-500">{errors.email.message}</p>
+              )}
             </div>
-            {errors.password && (
-              <p className="text-sm text-red-500">{errors.password.message}</p>
-            )}
-          </div>
 
-          <Button type="submit" className="w-full" disabled={isLoading || isGoogleLoading}>
-            {isLoading ? 'Signing in...' : 'Sign in'}
-          </Button>
-        </form>
-        </div>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-3">
-        <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
-          Don&apos;t have an account?{' '}
-          <Link href="/signup" className="text-blue-600 hover:text-blue-500 font-medium">
-            Sign up
-          </Link>
-        </p>
-        <p className="text-sm text-center w-full text-zinc-600 dark:text-zinc-400">
-          Are you a creator?{' '}
-          <Link href="/creator-login" className="text-blue-600 hover:text-blue-500 font-medium">
-            Creator Login
-          </Link>
-        </p>
-      </CardFooter>
-    </Card>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-zinc-900">Password</Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-zinc-600 hover:text-zinc-900 underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  {...register('password')}
+                  disabled={isLoading}
+                  className="pr-10 border-zinc-300 focus:border-zinc-900 focus:ring-zinc-900"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-900"
+                  tabIndex={-1}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-sm text-red-500">{errors.password.message}</p>
+              )}
+            </div>
+
+            <Button 
+              type="submit" 
+              className="w-full bg-zinc-900 hover:bg-zinc-800 text-white rounded-lg" 
+              disabled={isLoading || isGoogleLoading}
+            >
+              {isLoading ? 'Signing in...' : 'Sign in'}
+            </Button>
+          </form>
+
+          <div className="space-y-3 pt-4 border-t border-zinc-200">
+            <p className="text-sm text-center text-zinc-600">
+              Don&apos;t have an account?{' '}
+              <Link href="/signup" className="text-zinc-900 hover:text-zinc-700 font-medium underline">
+                Sign up
+              </Link>
+            </p>
+            <p className="text-sm text-center text-zinc-600">
+              Are you a creator?{' '}
+              <Link href="/creator-login" className="text-zinc-900 hover:text-zinc-700 font-medium underline">
+                Creator Login
+              </Link>
+            </p>
+          </div>
+        </motion.div>
+      </motion.div>
+    </motion.div>
   );
 }

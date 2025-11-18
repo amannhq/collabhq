@@ -45,29 +45,52 @@
 
 :root {
   --radius: 0.625rem;
+  
+  /* Brand Colors - Collab Theme */
+  --brand-cream: 243 241 234; /* #f3f1ea */
+  --brand-dark: 24 24 27; /* zinc-900 */
+  --brand-dark-hover: 39 39 42; /* zinc-800 */
+  
+  /* Base Colors */
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
+  
+  /* Primary - Brand Dark (zinc-900) */
   --primary: oklch(0.205 0 0);
   --primary-foreground: oklch(0.985 0 0);
+  
+  /* Secondary - Light Gray */
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
+  
+  /* Muted */
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
+  
+  /* Accent */
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
+  
+  /* Destructive */
   --destructive: oklch(0.577 0.245 27.325);
+  
+  /* Border - zinc-200 */
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
+  
+  /* Charts */
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
   --chart-4: oklch(0.828 0.189 84.429);
   --chart-5: oklch(0.769 0.188 70.08);
+  
+  /* Sidebar */
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -123,6 +146,38 @@
   
   body {
     @apply bg-background text-foreground overflow-x-hidden;
+  }
+}
+
+/* Brand Typography */
+@layer utilities {
+  .font-brand-serif {
+    font-family: 'Georgia', 'Times New Roman', serif;
+  }
+  
+  .font-brand-sans {
+    font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  }
+  
+  /* Brand Colors */
+  .bg-brand-cream {
+    background-color: rgb(var(--brand-cream));
+  }
+  
+  .bg-brand-dark {
+    background-color: rgb(var(--brand-dark));
+  }
+  
+  .bg-brand-dark-hover {
+    background-color: rgb(var(--brand-dark-hover));
+  }
+  
+  .text-brand-dark {
+    color: rgb(var(--brand-dark));
+  }
+  
+  .border-brand-cream {
+    border-color: rgb(var(--brand-cream));
   }
 }
 
