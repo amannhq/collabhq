@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import { Post } from '@/lib/db/models';
-import { auth } from '@/lib/auth';
-import { headers } from 'next/headers';
 import { createLogger } from '@/lib/utils/logger';
+import { PostUpdateSchema, ObjectIdSchema } from '@/lib/api/validation';
+import { withErrorHandler, NotFoundError, ForbiddenError, BadRequestError } from '@/lib/api/error-handler';
+import { withAuth } from '@/lib/api/auth-middleware';
 
 const logger = createLogger('post-detail-api');
 
@@ -11,31 +12,25 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  try {
+  return withErrorHandler(withAuth(async (_req, { user }) => {
     await connectDB();
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const { postId } = await params;
 
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Validate postId is a valid ObjectId
+    try {
+      ObjectIdSchema.parse(postId);
+    } catch {
+      throw BadRequestError('Invalid post ID format');
     }
 
-    const { postId } = await params;
     const post = await Post.findById(postId)
       .populate('creatorId', 'name email twitterHandle')
       .populate('projectId', 'name organizationId')
       .lean();
 
     if (!post) {
-      return NextResponse.json(
-        { success: false, error: 'Post not found' },
-        { status: 404 }
-      );
+      throw NotFoundError('Post');
     }
 
     // Verify access
@@ -45,13 +40,10 @@ export async function GET(
       (post as unknown as PopulatedPost).projectId.organizationId
     );
 
-    if (!organization || organization.ownerId.toString() !== session.user.id) {
+    if (!organization || organization.ownerId.toString() !== user.id) {
       // Check if user is the creator
-      if ((post as unknown as PopulatedPost).creatorId._id.toString() !== session.user.id) {
-        return NextResponse.json(
-          { success: false, error: 'Forbidden' },
-          { status: 403 }
-        );
+      if ((post as unknown as PopulatedPost).creatorId._id.toString() !== user.id) {
+        throw ForbiddenError('You do not have access to this post');
       }
     }
 
@@ -61,44 +53,34 @@ export async function GET(
       success: true,
       data: post,
     });
-  } catch (error) {
-    logger.error({ error }, 'Error fetching post');
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  }))(request, undefined);
 }
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  try {
+  return withErrorHandler(withAuth(async (_req, { user }) => {
     await connectDB();
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
-
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
+    // Validate request body with Zod
     const body = await request.json();
-    const { caption, postUrl, status } = body;
+    const validatedData = PostUpdateSchema.parse(body);
+    const { caption, status } = validatedData;
 
     const { postId } = await params;
+
+    // Validate postId is a valid ObjectId
+    try {
+      ObjectIdSchema.parse(postId);
+    } catch {
+      throw BadRequestError('Invalid post ID format');
+    }
+
     const post = await Post.findById(postId).populate('projectId');
 
     if (!post) {
-      return NextResponse.json(
-        { success: false, error: 'Post not found' },
-        { status: 404 }
-      );
+      throw NotFoundError('Post');
     }
 
     // Verify access (admin or creator)
@@ -107,33 +89,26 @@ export async function PATCH(
       post.projectId.organizationId
     );
 
-    const isAdmin = organization && organization.ownerId.toString() === session.user.id;
-    const isCreator = post.creatorId.toString() === session.user.id;
+    const isAdmin = organization && organization.ownerId.toString() === user.id;
+    const isCreator = post.creatorId.toString() === user.id;
 
     if (!isAdmin && !isCreator) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
-      );
+      throw ForbiddenError('You do not have permission to update this post');
     }
 
     // Only admin can change status
     if (status && !isAdmin) {
-      return NextResponse.json(
-        { success: false, error: 'Only admin can change post status' },
-        { status: 403 }
-      );
+      throw ForbiddenError('Only admin can change post status');
     }
 
-    // Update post
+    // Update post (validated data only)
     if (caption !== undefined) post.caption = caption;
-    if (postUrl !== undefined) post.postUrl = postUrl;
     if (status !== undefined) post.status = status;
 
     await post.save();
 
     logger.info(
-      { postId, userId: session.user.id },
+      { postId, userId: user.id },
       'Post updated'
     );
 
@@ -141,41 +116,29 @@ export async function PATCH(
       success: true,
       data: post,
     });
-  } catch (error) {
-    logger.error({ error }, 'Error updating post');
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  }))(request, undefined);
 }
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  try {
+  return withErrorHandler(withAuth(async (_req, { user }) => {
     await connectDB();
 
-    const session = await auth.api.getSession({
-      headers: await headers(),
-    });
+    const { postId } = await params;
 
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+    // Validate postId is a valid ObjectId
+    try {
+      ObjectIdSchema.parse(postId);
+    } catch {
+      throw BadRequestError('Invalid post ID format');
     }
 
-    const { postId } = await params;
     const post = await Post.findById(postId).populate('projectId');
 
     if (!post) {
-      return NextResponse.json(
-        { success: false, error: 'Post not found' },
-        { status: 404 }
-      );
+      throw NotFoundError('Post');
     }
 
     // Verify access (only admin can delete)
@@ -184,11 +147,8 @@ export async function DELETE(
       post.projectId.organizationId
     );
 
-    if (!organization || organization.ownerId.toString() !== session.user.id) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
-      );
+    if (!organization || organization.ownerId.toString() !== user.id) {
+      throw ForbiddenError('Only organization admins can delete posts');
     }
 
     // Delete associated metrics
@@ -199,7 +159,7 @@ export async function DELETE(
     await post.deleteOne();
 
     logger.info(
-      { postId, userId: session.user.id },
+      { postId, userId: user.id },
       'Post deleted'
     );
 
@@ -207,11 +167,5 @@ export async function DELETE(
       success: true,
       data: { message: 'Post deleted successfully' },
     });
-  } catch (error) {
-    logger.error({ error }, 'Error deleting post');
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  }))(request, undefined);
 }

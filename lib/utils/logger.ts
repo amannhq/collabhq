@@ -101,6 +101,12 @@ const emitLogSynchronously = (payload: LogMessage) => {
 const attachWorkerHandlers = (worker: WorkerInstance) => {
   workerReady = false;
 
+  // Increase max listeners to avoid memory leak warnings in dev mode
+  // Better Auth initialization creates multiple loggers
+  if (worker.setMaxListeners) {
+    worker.setMaxListeners(20);
+  }
+
   worker.once('online', () => {
     workerReady = true;
     while (pendingMessages.length > 0) {

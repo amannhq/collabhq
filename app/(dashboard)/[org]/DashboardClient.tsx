@@ -77,36 +77,34 @@ export function DashboardClient({ organizationId }: { organizationId: string }) 
     mutate,
     isValidating,
   } = useSWR<{ success: boolean; data: DashboardData }>(
-    organizationId ? `/api/organizations/${organizationId}/stats` : null, // Don't fetch if no orgId
-    fetcher, // Explicitly pass fetcher to ensure credentials are included
+    `/api/organizations/${organizationId}/stats`,
+    fetcher,
     {
-      dedupingInterval: 30000, // 30 seconds - dashboard data doesn't change often
-      refreshInterval: 180000, // Auto-refresh every 3 minutes
+      dedupingInterval: 30000,
+      refreshInterval: 180000,
       revalidateIfStale: true,
-      keepPreviousData: true, // Show old data while loading new
+      keepPreviousData: true,
       revalidateOnMount: true, // Always fetch on mount
-      revalidateOnFocus: false, // Don't refetch on focus
+      revalidateOnFocus: false,
       shouldRetryOnError: true,
-      errorRetryCount: 2,
-      // Force immediate fetch on mount (especially after redirect)
-      fallbackData: undefined,
+      errorRetryCount: 3, // Increased retries
+      errorRetryInterval: 1000, // Retry faster (1s)
     }
   );
 
-  // Force revalidation on mount (especially important after redirect from login)
   useEffect(() => {
-    if (organizationId && !data && !error) {
-      // If we have orgId but no data and no error, force a fetch
-      // This handles the case where SWR doesn't trigger on initial mount after redirect
+    if (!data && !isLoading && !error) {
       const timer = setTimeout(() => {
+        console.log('[Dashboard] Force fetching stuck data');
         mutate();
-      }, 100); // Small delay to ensure cookies are available
+      }, 300);
 
       return () => clearTimeout(timer);
     }
-  }, [organizationId, data, error, mutate]); // Include all dependencies
+  }, [data, isLoading, error, mutate]);
 
-  if (isLoading) {
+  // Show loading while truly loading OR stuck without data
+  if (isLoading || (!data && !error)) {
     return <DashboardSkeleton />;
   }
 

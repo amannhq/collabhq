@@ -257,81 +257,148 @@ async function getGrowthTrends(orgId: unknown, startDate: Date, endDate: Date) {
 }
 
 async function getSummaryMetrics(orgId: unknown, startDate: Date, endDate: Date) {
-  // Get current period posts
-  const currentPosts = await Post.find({
-    organizationId: orgId,
-    createdAt: { $gte: startDate, $lte: endDate },
-    status: 'approved',
-  }).lean();
-
-  // Get previous period for comparison
+  // OPTIMIZED: Use aggregation pipeline to calculate all metrics in database
   const periodLength = endDate.getTime() - startDate.getTime();
   const prevStartDate = new Date(startDate.getTime() - periodLength);
   const prevEndDate = startDate;
 
-  const previousPosts = await Post.find({
-    organizationId: orgId,
-    createdAt: { $gte: prevStartDate, $lt: prevEndDate },
-    status: 'approved',
-  }).lean();
+  // Single aggregation for both current and previous periods
+  const [metrics] = await Post.aggregate([
+    {
+      $match: {
+        organizationId: orgId,
+        status: 'approved',
+        createdAt: {
+          $gte: prevStartDate,
+          $lte: endDate
+        }
+      }
+    },
+    {
+      $facet: {
+        currentPeriod: [
+          {
+            $match: {
+              createdAt: { $gte: startDate, $lte: endDate }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalPosts: { $sum: 1 },
+              activeCreators: { $addToSet: '$creatorId' },
+              totalImpressions: { $sum: { $ifNull: ['$latestMetrics.impressions', 0] } },
+              totalEngagement: {
+                $sum: {
+                  $add: [
+                    { $ifNull: ['$latestMetrics.likes', 0] },
+                    { $ifNull: ['$latestMetrics.retweets', 0] },
+                    { $ifNull: ['$latestMetrics.replies', 0] }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            $project: {
+              totalPosts: 1,
+              activeCreators: { $size: '$activeCreators' },
+              totalImpressions: 1,
+              totalEngagement: 1,
+              avgEngagementRate: {
+                $cond: [
+                  { $gt: ['$totalImpressions', 0] },
+                  { $multiply: [{ $divide: ['$totalEngagement', '$totalImpressions'] }, 100] },
+                  0
+                ]
+              }
+            }
+          }
+        ],
+        previousPeriod: [
+          {
+            $match: {
+              createdAt: { $gte: prevStartDate, $lt: prevEndDate }
+            }
+          },
+          {
+            $group: {
+              _id: null,
+              totalPosts: { $sum: 1 },
+              activeCreators: { $addToSet: '$creatorId' },
+              totalImpressions: { $sum: { $ifNull: ['$latestMetrics.impressions', 0] } },
+              totalEngagement: {
+                $sum: {
+                  $add: [
+                    { $ifNull: ['$latestMetrics.likes', 0] },
+                    { $ifNull: ['$latestMetrics.retweets', 0] },
+                    { $ifNull: ['$latestMetrics.replies', 0] }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            $project: {
+              totalPosts: 1,
+              activeCreators: { $size: '$activeCreators' },
+              totalImpressions: 1,
+              totalEngagement: 1,
+              avgEngagementRate: {
+                $cond: [
+                  { $gt: ['$totalImpressions', 0] },
+                  { $multiply: [{ $divide: ['$totalEngagement', '$totalImpressions'] }, 100] },
+                  0
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]);
 
-  // Calculate metrics
-  const totalPosts = currentPosts.length;
-  const previousTotalPosts = previousPosts.length;
-  const postsGrowth = previousTotalPosts > 0
-    ? ((totalPosts - previousTotalPosts) / previousTotalPosts) * 100
+  const current = metrics.currentPeriod[0] || {
+    totalPosts: 0,
+    activeCreators: 0,
+    totalImpressions: 0,
+    totalEngagement: 0,
+    avgEngagementRate: 0
+  };
+
+  const previous = metrics.previousPeriod[0] || {
+    totalPosts: 0,
+    activeCreators: 0,
+    totalImpressions: 0,
+    totalEngagement: 0,
+    avgEngagementRate: 0
+  };
+
+  // Calculate growth percentages
+  const postsGrowth = previous.totalPosts > 0
+    ? ((current.totalPosts - previous.totalPosts) / previous.totalPosts) * 100
     : 0;
 
-  const activeCreators = new Set(currentPosts.map((p) => p.creatorId?.toString())).size;
-  const previousActiveCreators = new Set(previousPosts.map((p) => p.creatorId?.toString())).size;
-  const creatorsGrowth = previousActiveCreators > 0
-    ? ((activeCreators - previousActiveCreators) / previousActiveCreators) * 100
+  const creatorsGrowth = previous.activeCreators > 0
+    ? ((current.activeCreators - previous.activeCreators) / previous.activeCreators) * 100
     : 0;
 
-  const totalImpressions = currentPosts.reduce(
-    (sum, p) => sum + (p.latestMetrics?.impressions || 0),
-    0
-  );
-  const previousImpressions = previousPosts.reduce(
-    (sum, p) => sum + (p.latestMetrics?.impressions || 0),
-    0
-  );
-  const impressionsGrowth = previousImpressions > 0
-    ? ((totalImpressions - previousImpressions) / previousImpressions) * 100
+  const impressionsGrowth = previous.totalImpressions > 0
+    ? ((current.totalImpressions - previous.totalImpressions) / previous.totalImpressions) * 100
     : 0;
 
-  const totalEngagement = currentPosts.reduce(
-    (sum, p) =>
-      sum +
-      (p.latestMetrics?.likes || 0) +
-      (p.latestMetrics?.retweets || 0) +
-      (p.latestMetrics?.replies || 0),
-    0
-  );
-  const avgEngagementRate = totalImpressions > 0 ? (totalEngagement / totalImpressions) * 100 : 0;
-
-  const previousEngagement = previousPosts.reduce(
-    (sum, p) =>
-      sum +
-      (p.latestMetrics?.likes || 0) +
-      (p.latestMetrics?.retweets || 0) +
-      (p.latestMetrics?.replies || 0),
-    0
-  );
-  const prevAvgEngagementRate =
-    previousImpressions > 0 ? (previousEngagement / previousImpressions) * 100 : 0;
-  const engagementGrowth = prevAvgEngagementRate > 0
-    ? ((avgEngagementRate - prevAvgEngagementRate) / prevAvgEngagementRate) * 100
+  const engagementGrowth = previous.avgEngagementRate > 0
+    ? ((current.avgEngagementRate - previous.avgEngagementRate) / previous.avgEngagementRate) * 100
     : 0;
 
   return {
-    totalPosts,
+    totalPosts: current.totalPosts,
     postsGrowth,
-    activeCreators,
+    activeCreators: current.activeCreators,
     creatorsGrowth,
-    totalImpressions,
+    totalImpressions: current.totalImpressions,
     impressionsGrowth,
-    avgEngagementRate,
+    avgEngagementRate: current.avgEngagementRate,
     engagementGrowth,
   };
 }

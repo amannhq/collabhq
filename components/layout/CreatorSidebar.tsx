@@ -1,10 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useSubmitPost } from '@/contexts/SubmitPostContext';
+import { authClient } from '@/lib/auth/client';
 import {
   Sidebar,
   SidebarContent,
@@ -66,9 +67,20 @@ const navItems = [
 
 export function CreatorSidebar({ creator, stats }: CreatorSidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const baseUrl = `/creator/${creator._id}`;
   const { open, toggleSidebar } = useSidebar();
   const { openModal } = useSubmitPost();
+
+  const handleSignOut = async () => {
+    try {
+      await authClient.signOut();
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Failed to sign out:', error);
+    }
+  };
 
   const getStatusColor = (status?: string) => {
     switch (status) {
@@ -209,11 +221,12 @@ export function CreatorSidebar({ creator, stats }: CreatorSidebarProps) {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <Link href="/api/auth/signout">
-                <LogOut />
-                <span>Sign Out</span>
-              </Link>
+            <SidebarMenuButton
+              onClick={handleSignOut}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <LogOut />
+              <span>Sign Out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

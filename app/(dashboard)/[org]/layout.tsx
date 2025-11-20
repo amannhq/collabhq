@@ -12,8 +12,6 @@ interface OrganizationLayoutProps {
   }>;
 }
 
-// CRITICAL: This only runs on initial page load, not on navigation
-// Navigation is handled client-side for instant transitions
 export default async function OrganizationLayout({
   children,
   params,

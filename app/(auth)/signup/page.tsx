@@ -131,9 +131,6 @@ export default function SignupPage() {
 
         if (orgData.success) {
           toast.success('Welcome! Redirecting to your dashboard...');
-
-          // Redirect to root - let server-side logic handle the redirect
-          // This is faster and more reliable than client-side navigation
           router.push('/');
           router.refresh();
         } else {

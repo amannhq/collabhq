@@ -133,14 +133,15 @@ export async function getUser(
 
 /**
  * Check if user has access to organization
+ * Cached per request to avoid duplicate queries
  * @param userId - The user ID to check
  * @param organizationId - The organization ID to check access for
  * @returns True if user has access, false otherwise
  */
-export async function hasOrganizationAccess(
+export const hasOrganizationAccess = cache(async (
   userId: string,
   organizationId: string
-): Promise<boolean> {
+): Promise<boolean> => {
   try {
     await ensureDbConnection();
     const user = await User.findById(userId)
@@ -178,7 +179,7 @@ export async function hasOrganizationAccess(
       const projectId = typeof user.creatorProfile.projectId === 'string'
         ? user.creatorProfile.projectId
         : user.creatorProfile.projectId.toString();
-      
+
       // Use exists() for faster existence check
       const projectExists = await Project.exists({
         _id: projectId,
@@ -196,7 +197,7 @@ export async function hasOrganizationAccess(
     );
     return false;
   }
-}
+});
 
 /**
  * Update user login tracking

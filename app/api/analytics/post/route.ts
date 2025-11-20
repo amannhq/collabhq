@@ -31,37 +31,41 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Verify organization access
-    const organization = await Organization.findById(organizationId).lean<IOrganization>();
+    // OPTIMIZED: Parallel queries for organization and post
+    const [organization, post] = await Promise.all([
+      Organization.findById(organizationId)
+        .select('_id ownerId')
+        .lean<IOrganization>(),
+      Post.findById(postId)
+        .select('postUrl caption status createdAt approvedAt projectId creatorId')
+        .populate('creatorId', 'name email twitterHandle')
+        .populate('projectId', 'name organizationId')
+        .lean() as Promise<{
+          _id: { toString(): string };
+          postUrl: string;
+          caption?: string;
+          status: string;
+          createdAt: Date;
+          approvedAt?: Date;
+          projectId?: {
+            _id: { toString(): string };
+            organizationId?: { toString(): string };
+            name?: string;
+          };
+          creatorId: {
+            name: string;
+            email: string;
+            twitterHandle?: string;
+          };
+        } | null>
+    ]);
+
     if (!organization) {
       return NextResponse.json(
         { success: false, error: 'Organization not found' },
         { status: 404 }
       );
     }
-
-    // Get post details
-    const post = await Post.findById(postId)
-      .populate('creatorId', 'name email twitterHandle')
-      .populate('projectId', 'name organizationId')
-      .lean() as {
-        _id: { toString(): string };
-        postUrl: string;
-        caption?: string;
-        status: string;
-        createdAt: Date;
-        approvedAt?: Date;
-        projectId?: {
-          _id: { toString(): string };
-          organizationId?: { toString(): string };
-          name?: string;
-        };
-        creatorId: {
-          name: string;
-          email: string;
-          twitterHandle?: string;
-        };
-      } | null;
 
     if (!post) {
       return NextResponse.json(
@@ -83,47 +87,139 @@ export async function GET(request: NextRequest) {
     const endDate = toParam ? new Date(toParam) : null;
 
     // Build metrics query with optional date filtering
-    const metricsQuery: { postId: string; recordedAt?: { $gte?: Date; $lte?: Date } } = { postId };
+    const metricsMatch: { postId: string; recordedAt?: { $gte?: Date; $lte?: Date } } = { postId };
     if (startDate || endDate) {
-      metricsQuery.recordedAt = {};
-      if (startDate) metricsQuery.recordedAt.$gte = startDate;
-      if (endDate) metricsQuery.recordedAt.$lte = endDate;
+      metricsMatch.recordedAt = {};
+      if (startDate) metricsMatch.recordedAt.$gte = startDate;
+      if (endDate) metricsMatch.recordedAt.$lte = endDate;
     }
 
-    // Get metrics history
-    const metricsHistory = await Metrics.find(metricsQuery)
-      .sort({ recordedAt: 1 })
-      .lean();
+    // OPTIMIZED: Use aggregation to calculate metrics on database side + parallel project comparison
+    const [metricsAggregation, engagementOverTime, projectComparison] = await Promise.all([
+      // Single aggregation to get all summary stats
+      Metrics.aggregate([
+        { $match: metricsMatch },
+        { $sort: { recordedAt: 1 } },
+        {
+          $group: {
+            _id: null,
+            totalMetrics: { $sum: 1 },
+            lastLikes: { $last: '$metrics.likes' },
+            lastRetweets: { $last: '$metrics.retweets' },
+            lastReplies: { $last: '$metrics.replies' },
+            lastImpressions: { $last: '$metrics.impressions' },
+            maxEngagement: {
+              $max: {
+                $add: [
+                  { $ifNull: ['$metrics.likes', 0] },
+                  { $ifNull: ['$metrics.retweets', 0] },
+                  { $ifNull: ['$metrics.replies', 0] }
+                ]
+              }
+            },
+            firstEngagement: {
+              $first: {
+                $add: [
+                  { $ifNull: ['$metrics.likes', 0] },
+                  { $ifNull: ['$metrics.retweets', 0] },
+                  { $ifNull: ['$metrics.replies', 0] }
+                ]
+              }
+            },
+            lastEngagement: {
+              $last: {
+                $add: [
+                  { $ifNull: ['$metrics.likes', 0] },
+                  { $ifNull: ['$metrics.retweets', 0] },
+                  { $ifNull: ['$metrics.replies', 0] }
+                ]
+              }
+            }
+          }
+        }
+      ]),
+      // Get timeline data with limit
+      Metrics.find(metricsMatch)
+        .select('recordedAt metrics')
+        .sort({ recordedAt: 1 })
+        .limit(1000) // Reasonable limit for charts
+        .lean(),
+      // Parallel: Get project average for comparison
+      post.projectId?._id ? Post.aggregate([
+        {
+          $match: {
+            projectId: post.projectId._id,
+            _id: { $ne: postId },
+            createdAt: { $gte: post.createdAt },
+            status: 'approved'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            avgEngagement: {
+              $avg: {
+                $add: [
+                  { $ifNull: ['$latestMetrics.likes', 0] },
+                  { $ifNull: ['$latestMetrics.retweets', 0] },
+                  { $ifNull: ['$latestMetrics.replies', 0] }
+                ]
+              }
+            },
+            count: { $sum: 1 }
+          }
+        }
+      ]) : Promise.resolve([])
+    ]);
 
-    // Calculate analytics from metrics
-    const totalMetrics = metricsHistory.length;
+    const metricsStats = metricsAggregation[0] || {
+      totalMetrics: 0,
+      lastLikes: 0,
+      lastRetweets: 0,
+      lastReplies: 0,
+      lastImpressions: 0,
+      maxEngagement: 0,
+      firstEngagement: 0,
+      lastEngagement: 0
+    };
 
-    let totalLikes = 0;
-    let totalRetweets = 0;
-    let totalReplies = 0;
-    let totalImpressions = 0;
-    let maxEngagement = 0;
+    const totalLikes = metricsStats.lastLikes || 0;
+    const totalRetweets = metricsStats.lastRetweets || 0;
+    const totalReplies = metricsStats.lastReplies || 0;
+    const totalImpressions = metricsStats.lastImpressions || 0;
+    const totalEngagement = totalLikes + totalRetweets + totalReplies;
+    const maxEngagement = metricsStats.maxEngagement || 0;
 
-    const engagementOverTime = metricsHistory.map((m, index) => {
+    // Calculate engagement breakdown
+    const engagementBreakdown = {
+      likes: totalLikes,
+      retweets: totalRetweets,
+      replies: totalReplies,
+      likesPercent: totalEngagement > 0 ? (totalLikes / totalEngagement) * 100 : 0,
+      retweetsPercent: totalEngagement > 0 ? (totalRetweets / totalEngagement) * 100 : 0,
+      repliesPercent: totalEngagement > 0 ? (totalReplies / totalEngagement) * 100 : 0,
+    };
+
+    // Calculate overall growth
+    const overallGrowth = metricsStats.firstEngagement > 0
+      ? ((metricsStats.lastEngagement - metricsStats.firstEngagement) / metricsStats.firstEngagement) * 100
+      : 0;
+
+    // Calculate engagement rate
+    const engagementRate = totalImpressions > 0 ? (totalEngagement / totalImpressions) * 100 : 0;
+
+    // Process timeline data with growth calculations
+    const engagementOverTimeData = engagementOverTime.map((m, index) => {
       const likes = m.metrics?.likes || 0;
       const retweets = m.metrics?.retweets || 0;
       const replies = m.metrics?.replies || 0;
       const impressions = m.metrics?.impressions || 0;
       const engagement = likes + retweets + replies;
 
-      totalLikes = likes;
-      totalRetweets = retweets;
-      totalReplies = replies;
-      totalImpressions = impressions;
-
-      if (engagement > maxEngagement) {
-        maxEngagement = engagement;
-      }
-
       // Calculate growth since previous metric
       let growth = 0;
       if (index > 0) {
-        const prevMetrics = metricsHistory[index - 1];
+        const prevMetrics = engagementOverTime[index - 1];
         const prevEngagement = (prevMetrics.metrics?.likes || 0) +
                                (prevMetrics.metrics?.retweets || 0) +
                                (prevMetrics.metrics?.replies || 0);
@@ -143,58 +239,8 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // Calculate engagement breakdown
-    const totalEngagement = totalLikes + totalRetweets + totalReplies;
-    const engagementBreakdown = {
-      likes: totalLikes,
-      retweets: totalRetweets,
-      replies: totalReplies,
-      likesPercent: totalEngagement > 0 ? (totalLikes / totalEngagement) * 100 : 0,
-      retweetsPercent: totalEngagement > 0 ? (totalRetweets / totalEngagement) * 100 : 0,
-      repliesPercent: totalEngagement > 0 ? (totalReplies / totalEngagement) * 100 : 0,
-    };
-
-    // Calculate growth rate (first to last in period)
-    let overallGrowth = 0;
-    if (metricsHistory.length >= 2) {
-      const firstMetrics = metricsHistory[0];
-      const lastMetrics = metricsHistory[metricsHistory.length - 1];
-
-      const firstEngagement = (firstMetrics.metrics?.likes || 0) +
-                              (firstMetrics.metrics?.retweets || 0) +
-                              (firstMetrics.metrics?.replies || 0);
-      const lastEngagement = (lastMetrics.metrics?.likes || 0) +
-                             (lastMetrics.metrics?.retweets || 0) +
-                             (lastMetrics.metrics?.replies || 0);
-
-      if (firstEngagement > 0) {
-        overallGrowth = ((lastEngagement - firstEngagement) / firstEngagement) * 100;
-      }
-    }
-
-    // Calculate engagement rate
-    const engagementRate = totalImpressions > 0 ? (totalEngagement / totalImpressions) * 100 : 0;
-
-    // Get average metrics for comparison (same project, same time period)
-    const projectPosts = post.projectId?._id ? await Post.find({
-      projectId: post.projectId._id,
-      _id: { $ne: postId },
-      createdAt: { $gte: post.createdAt },
-    }).lean() : [];
-
-    let avgProjectEngagement = 0;
-    if (projectPosts.length > 0) {
-      const totalProjectEngagement = projectPosts.reduce((sum, p) => {
-        const post = p as { latestMetrics?: { likes?: number; retweets?: number; replies?: number } };
-        return sum +
-          (post.latestMetrics?.likes || 0) +
-          (post.latestMetrics?.retweets || 0) +
-          (post.latestMetrics?.replies || 0);
-      }, 0);
-
-      avgProjectEngagement = totalProjectEngagement / projectPosts.length;
-    }
-
+    // Get project comparison
+    const avgProjectEngagement = projectComparison[0]?.avgEngagement || 0;
     const comparisonVsAvg = avgProjectEngagement > 0
       ? ((totalEngagement - avgProjectEngagement) / avgProjectEngagement) * 100
       : 0;
@@ -221,13 +267,13 @@ export async function GET(request: NextRequest) {
         engagementRate: Math.round(engagementRate * 100) / 100,
       },
       engagementBreakdown,
-      engagementOverTime,
+      engagementOverTime: engagementOverTimeData,
       insights: {
-        totalDataPoints: totalMetrics,
+        totalDataPoints: metricsStats.totalMetrics,
         overallGrowth: Math.round(overallGrowth * 10) / 10,
         maxEngagement,
-        avgEngagement: metricsHistory.length > 0
-          ? Math.round(totalEngagement / metricsHistory.length)
+        avgEngagement: metricsStats.totalMetrics > 0
+          ? Math.round(totalEngagement / metricsStats.totalMetrics)
           : 0,
         comparisonVsProjectAvg: Math.round(comparisonVsAvg * 10) / 10,
         performanceBenchmark: comparisonVsAvg > 0 ? 'Above Average' :

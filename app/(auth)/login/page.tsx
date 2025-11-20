@@ -62,10 +62,32 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect to root - let server-side logic handle role-based redirect
-      // This is much faster than multiple client-side API calls
-      router.push('/');
-      router.refresh();
+      // Fetch user data to determine redirect destination
+      try {
+        const userResponse = await fetch('/api/auth/user', {
+          credentials: 'include',
+        });
+
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+
+          // Redirect directly to the appropriate dashboard
+          if (userData.role === 'creator') {
+            router.push(`/creator/${userData.id}`);
+          } else if (userData.organizationSlug) {
+            router.push(`/${userData.organizationSlug}`);
+          } else {
+            // Fallback to homepage if no organization slug
+            router.push('/');
+          }
+        } else {
+          // Fallback to homepage if user data fetch fails
+          router.push('/');
+        }
+      } catch (fetchError) {
+        console.error('Failed to fetch user data:', fetchError);
+        router.push('/');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

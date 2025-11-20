@@ -1,116 +1,161 @@
-import { NextResponse } from 'next/server';
-import { getSession } from '@/lib/auth';
+import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import { User, Post } from '@/lib/db/models';
+import { withErrorHandler, NotFoundError } from '@/lib/api/error-handler';
+import { withAuth } from '@/lib/api/auth-middleware';
+import { createLogger } from '@/lib/utils/logger';
+import { Types } from 'mongoose';
 
-export async function GET() {
-  try {
-    const session = await getSession();
+const logger = createLogger('leaderboard-api');
 
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const GET = withErrorHandler(withAuth(async (request: NextRequest, { user }) => {
+  const startedAt = Date.now();
+  await connectDB();
 
-    await connectDB();
+  // Get the logged-in creator's organization
+  const loggedInUser = await User.findById(user.id)
+    .select('organizationId')
+    .lean() as { _id: Types.ObjectId; organizationId?: Types.ObjectId } | null;
 
-    // Get the logged-in creator's organization
-    const loggedInUser = await User.findById(session.user.id)
-      .select('organizationId')
-      .lean() as { organizationId?: { toString(): string } } | null;
-
-    if (!loggedInUser?.organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'Organization not found' },
-        { status: 404 }
-      );
-    }
-
-    // Get all creators from the same organization
-    const creators = await User.find({
-      organizationId: loggedInUser.organizationId,
-      role: 'creator',
-    })
-      .select('_id name email avatar creatorProfile')
-      .lean() as unknown as Array<{
-        _id: { toString(): string };
-        name: string;
-        email: string;
-        avatar?: string;
-        creatorProfile?: {
-          twitterHandle?: string;
-        };
-      }>;
-
-    // Get stats for each creator
-    const leaderboardData = await Promise.all(
-      creators.map(async (creator) => {
-        const [totalPosts, approvedPosts] = await Promise.all([
-          Post.countDocuments({ creatorId: creator._id }),
-          Post.countDocuments({ creatorId: creator._id, status: 'approved' }),
-        ]);
-
-        // Calculate total engagement
-        const engagementResult = await Post.aggregate([
-          { $match: { creatorId: creator._id, status: 'approved' } },
-          {
-            $group: {
-              _id: null,
-              totalLikes: { $sum: { $ifNull: ['$latestMetrics.likes', 0] } },
-              totalRetweets: { $sum: { $ifNull: ['$latestMetrics.retweets', 0] } },
-              totalReplies: { $sum: { $ifNull: ['$latestMetrics.replies', 0] } },
-              totalImpressions: { $sum: { $ifNull: ['$latestMetrics.impressions', 0] } },
-            },
-          },
-        ]);
-
-        const engagement = engagementResult[0] || {
-          totalLikes: 0,
-          totalRetweets: 0,
-          totalReplies: 0,
-          totalImpressions: 0,
-        };
-
-        const totalEngagement = engagement.totalLikes + engagement.totalRetweets + engagement.totalReplies;
-        const avgEngagementRate =
-          engagement.totalImpressions > 0
-            ? (totalEngagement / engagement.totalImpressions) * 100
-            : 0;
-
-        return {
-          creatorId: creator._id.toString(),
-          creatorName: creator.name,
-          creatorHandle: creator.creatorProfile?.twitterHandle,
-          creatorAvatar: creator.avatar,
-          postCount: totalPosts,
-          approvedPosts,
-          totalEngagement,
-          totalImpressions: engagement.totalImpressions,
-          avgEngagementRate,
-        };
-      })
-    );
-
-    // Sort by total engagement (descending)
-    const sortedLeaderboard = leaderboardData
-      .sort((a, b) => b.totalEngagement - a.totalEngagement)
-      .map((entry, index) => ({
-        ...entry,
-        rank: index + 1,
-      }))
-      .slice(0, 10); // Top 10 creators
-
-    return NextResponse.json({
-      success: true,
-      data: sortedLeaderboard,
-    });
-  } catch (error) {
-    console.error('Error fetching leaderboard:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to fetch leaderboard data' },
-      { status: 500 }
-    );
+  if (!loggedInUser?.organizationId) {
+    throw NotFoundError('Organization');
   }
-}
+
+  const orgId = loggedInUser.organizationId;
+
+  // OPTIMIZED: Use single aggregation pipeline instead of multiple queries per creator
+  const leaderboardData = await Post.aggregate([
+    // Match posts from the organization
+    {
+      $match: {
+        organizationId: new Types.ObjectId(orgId.toString()),
+      },
+    },
+    // Group by creator and calculate stats
+    {
+      $group: {
+        _id: '$creatorId',
+        totalPosts: { $sum: 1 },
+        approvedPosts: {
+          $sum: { $cond: [{ $eq: ['$status', 'approved'] }, 1, 0] },
+        },
+        totalLikes: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', 'approved'] },
+              { $ifNull: ['$latestMetrics.likes', 0] },
+              0,
+            ],
+          },
+        },
+        totalRetweets: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', 'approved'] },
+              { $ifNull: ['$latestMetrics.retweets', 0] },
+              0,
+            ],
+          },
+        },
+        totalReplies: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', 'approved'] },
+              { $ifNull: ['$latestMetrics.replies', 0] },
+              0,
+            ],
+          },
+        },
+        totalImpressions: {
+          $sum: {
+            $cond: [
+              { $eq: ['$status', 'approved'] },
+              { $ifNull: ['$latestMetrics.impressions', 0] },
+              0,
+            ],
+          },
+        },
+      },
+    },
+    // Calculate derived metrics
+    {
+      $addFields: {
+        totalEngagement: {
+          $add: ['$totalLikes', '$totalRetweets', '$totalReplies'],
+        },
+        avgEngagementRate: {
+          $cond: [
+            { $gt: ['$totalImpressions', 0] },
+            {
+              $multiply: [
+                {
+                  $divide: [
+                    { $add: ['$totalLikes', '$totalRetweets', '$totalReplies'] },
+                    '$totalImpressions',
+                  ],
+                },
+                100,
+              ],
+            },
+            0,
+          ],
+        },
+      },
+    },
+    // Lookup creator details
+    {
+      $lookup: {
+        from: 'users',
+        localField: '_id',
+        foreignField: '_id',
+        as: 'creator',
+      },
+    },
+    {
+      $unwind: '$creator',
+    },
+    // Project final fields
+    {
+      $project: {
+        creatorId: '$_id',
+        creatorName: '$creator.name',
+        creatorHandle: '$creator.creatorProfile.twitterHandle',
+        creatorAvatar: '$creator.avatar',
+        postCount: '$totalPosts',
+        approvedPosts: '$approvedPosts',
+        totalEngagement: 1,
+        totalImpressions: 1,
+        avgEngagementRate: 1,
+      },
+    },
+    // Sort by total engagement
+    {
+      $sort: { totalEngagement: -1 },
+    },
+    // Limit to top 10
+    {
+      $limit: 10,
+    },
+  ]);
+
+  // Add ranks
+  const sortedLeaderboard = leaderboardData.map((entry, index) => ({
+    ...entry,
+    creatorId: entry.creatorId.toString(),
+    rank: index + 1,
+  }));
+
+  logger.info(
+    {
+      organizationId: orgId.toString(),
+      creatorsCount: sortedLeaderboard.length,
+      duration: Date.now() - startedAt,
+    },
+    'Leaderboard fetched'
+  );
+
+  return NextResponse.json({
+    success: true,
+    data: sortedLeaderboard,
+  });
+}));

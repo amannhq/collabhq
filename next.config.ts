@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable gzip compression for all responses
+  compress: true,
+
   // Exclude Pino packages from server bundle - they will be loaded at runtime
   // This prevents Turbopack from trying to bundle test files and incompatible modules
   serverExternalPackages: [

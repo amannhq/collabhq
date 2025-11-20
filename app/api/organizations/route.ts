@@ -1,63 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
 import Organization from '@/lib/db/models/Organization';
-import { getSession } from '@/lib/auth/auth-utils';
+import { validateSearchParams, OrganizationQuerySchema } from '@/lib/api/validation';
+import { withErrorHandler, NotFoundError, ForbiddenError } from '@/lib/api/error-handler';
+import { withAuth } from '@/lib/api/auth-middleware';
 
-export async function GET(request: NextRequest) {
-  try {
-    await connectDB();
-    const session = await getSession();
-    
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
+export const GET = withErrorHandler(withAuth(async (request: NextRequest, { user }) => {
+  await connectDB();
 
-    const { searchParams } = new URL(request.url);
-    const slug = searchParams.get('slug');
-    const orgId = searchParams.get('id');
+  const { searchParams } = new URL(request.url);
 
-    if (!slug && !orgId) {
-      return NextResponse.json(
-        { success: false, error: 'Slug or ID is required' },
-        { status: 400 }
-      );
-    }
-
-    // Find organization by slug or ID
-    const query = slug ? { slug } : { _id: orgId };
-    const organization = await Organization.findOne(query).lean() as { ownerId: { toString(): string }; _id: { toString(): string } } | null;
-
-    if (!organization) {
-      return NextResponse.json(
-        { success: false, error: 'Organization not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user has access to this organization
-    const hasAccess = 
-      organization.ownerId.toString() === session.user.id ||
-      session.user.organizationId === organization._id.toString();
-
-    if (!hasAccess) {
-      return NextResponse.json(
-        { success: false, error: 'Forbidden' },
-        { status: 403 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: organization
-    });
-  } catch (error) {
-    console.error('Error fetching organization:', error);
-    return NextResponse.json(
-      { success: false, error: 'Internal server error' },
-      { status: 500 }
-    );
+  // Validate search params with Zod
+  const validation = validateSearchParams(OrganizationQuerySchema, searchParams);
+  if (!validation.success) {
+    return validation.error;
   }
-}
+
+  const { slug, id: orgId } = validation.data;
+
+  // Find organization by slug or ID
+  const query = slug ? { slug } : { _id: orgId };
+  const organization = await Organization.findOne(query).lean() as { ownerId: { toString(): string }; _id: { toString(): string } } | null;
+
+  if (!organization) {
+    throw NotFoundError('Organization');
+  }
+
+  // Verify user has access (owner)
+  if (organization.ownerId.toString() !== user.id) {
+    throw ForbiddenError('You do not have access to this organization');
+  }
+
+  return NextResponse.json({
+    success: true,
+    data: organization,
+  });
+}));

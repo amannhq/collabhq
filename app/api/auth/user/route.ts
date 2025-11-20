@@ -18,18 +18,19 @@ export async function GET() {
     }
 
     await ensureDbConnection();
-    
+
     const user = await User.findById(session.user.id)
       .select('_id email name role organizationId creatorProfile')
+      .populate('organizationId', 'slug')
       .lean<{
         _id: { toString(): string };
         email: string;
         name: string;
         role: string;
-        organizationId?: { toString(): string };
+        organizationId?: { toString(): string; slug?: string };
         creatorProfile?: unknown;
       }>();
-    
+
     if (!user) {
       logger.warn({ email: session.user.email }, 'User not found');
       return NextResponse.json(
@@ -42,14 +43,13 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      data: {
-        _id: user._id.toString(),
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        organizationId: user.organizationId?.toString(),
-        creatorProfile: user.creatorProfile,
-      },
+      id: user._id.toString(),
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      organizationId: user.organizationId?.toString(),
+      organizationSlug: typeof user.organizationId === 'object' ? user.organizationId.slug : undefined,
+      creatorProfile: user.creatorProfile,
     });
   } catch (error) {
     logger.error({ error }, 'Error fetching user data');

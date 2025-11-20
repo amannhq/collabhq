@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db/mongodb';
-import { Post, Metrics } from '@/lib/db/models';
+import { Post } from '@/lib/db/models';
 import { getSession } from '@/lib/auth';
 import { createLogger } from '@/lib/utils/logger';
 
@@ -68,92 +68,159 @@ export async function GET(request: NextRequest) {
         startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     }
 
-    // Get all approved posts for this creator
-    const approvedPosts = await Post.find({
-      creatorId,
-      status: 'approved',
-    })
-      .select('_id latestMetrics growth createdAt approvedAt postUrl')
-      .lean();
+    // OPTIMIZED: Use aggregation to calculate statistics + parallel queries
+    const [aggregateStats, topPosts, metricsHistory] = await Promise.all([
+      // Single aggregation for all summary statistics
+      Post.aggregate([
+        {
+          $match: {
+            creatorId,
+            status: 'approved'
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalPosts: { $sum: 1 },
+            totalLikes: { $sum: { $ifNull: ['$latestMetrics.likes', 0] } },
+            totalRetweets: { $sum: { $ifNull: ['$latestMetrics.retweets', 0] } },
+            totalReplies: { $sum: { $ifNull: ['$latestMetrics.replies', 0] } },
+            totalImpressions: { $sum: { $ifNull: ['$latestMetrics.impressions', 0] } },
+            avgLikesGrowth: { $avg: { $ifNull: ['$growth.likes', 0] } },
+            avgRetweetsGrowth: { $avg: { $ifNull: ['$growth.retweets', 0] } },
+            avgRepliesGrowth: { $avg: { $ifNull: ['$growth.replies', 0] } },
+            avgImpressionsGrowth: { $avg: { $ifNull: ['$growth.impressions', 0] } }
+          }
+        }
+      ]),
+      // Get top performing posts with engagement calculated in DB
+      Post.aggregate([
+        {
+          $match: {
+            creatorId,
+            status: 'approved'
+          }
+        },
+        {
+          $addFields: {
+            totalEngagement: {
+              $add: [
+                { $ifNull: ['$latestMetrics.likes', 0] },
+                { $ifNull: ['$latestMetrics.retweets', 0] },
+                { $ifNull: ['$latestMetrics.replies', 0] }
+              ]
+            }
+          }
+        },
+        { $sort: { totalEngagement: -1 } },
+        { $limit: 10 },
+        {
+          $project: {
+            _id: 1,
+            postUrl: 1,
+            latestMetrics: 1,
+            totalEngagement: 1,
+            createdAt: 1
+          }
+        }
+      ]),
+      // Get metrics history (with limit for performance)
+      Post.aggregate([
+        {
+          $match: {
+            creatorId,
+            status: 'approved'
+          }
+        },
+        {
+          $lookup: {
+            from: 'metrics',
+            let: { postId: '$_id' },
+            pipeline: [
+              {
+                $match: {
+                  $expr: { $eq: ['$postId', '$$postId'] },
+                  recordedAt: { $gte: startDate }
+                }
+              },
+              { $sort: { recordedAt: 1 } },
+              { $limit: 100 } // Limit per post for performance
+            ],
+            as: 'metricsData'
+          }
+        },
+        { $unwind: '$metricsData' },
+        {
+          $project: {
+            postId: '$_id',
+            recordedAt: '$metricsData.recordedAt',
+            metrics: '$metricsData.metrics',
+            growth: '$metricsData.growth'
+          }
+        },
+        { $sort: { recordedAt: 1 } }
+      ])
+    ]);
 
-    const postIds = approvedPosts.map(p => p._id);
+    const stats = aggregateStats[0] || {
+      totalPosts: 0,
+      totalLikes: 0,
+      totalRetweets: 0,
+      totalReplies: 0,
+      totalImpressions: 0,
+      avgLikesGrowth: 0,
+      avgRetweetsGrowth: 0,
+      avgRepliesGrowth: 0,
+      avgImpressionsGrowth: 0
+    };
 
-    // Get metrics history for date range
-    const metricsHistory = await Metrics.find({
-      postId: { $in: postIds },
-      recordedAt: { $gte: startDate },
-    })
-      .select('postId metrics growth recordedAt')
-      .sort({ recordedAt: 1 })
-      .lean();
-
-    // Calculate aggregate statistics
-    const totalLikes = approvedPosts.reduce((sum, p) => sum + (p.latestMetrics?.likes || 0), 0);
-    const totalRetweets = approvedPosts.reduce((sum, p) => sum + (p.latestMetrics?.retweets || 0), 0);
-    const totalReplies = approvedPosts.reduce((sum, p) => sum + (p.latestMetrics?.replies || 0), 0);
-    const totalImpressions = approvedPosts.reduce((sum, p) => sum + (p.latestMetrics?.impressions || 0), 0);
-    const totalEngagement = totalLikes + totalRetweets + totalReplies;
-    const engagementRate = totalImpressions > 0 ? (totalEngagement / totalImpressions) * 100 : 0;
-
-    // Calculate average growth
-    const avgLikesGrowth = approvedPosts.reduce((sum, p) => sum + (p.growth?.likes || 0), 0) / (approvedPosts.length || 1);
-    const avgRetweetsGrowth = approvedPosts.reduce((sum, p) => sum + (p.growth?.retweets || 0), 0) / (approvedPosts.length || 1);
-    const avgRepliesGrowth = approvedPosts.reduce((sum, p) => sum + (p.growth?.replies || 0), 0) / (approvedPosts.length || 1);
-    const avgImpressionsGrowth = approvedPosts.reduce((sum, p) => sum + (p.growth?.impressions || 0), 0) / (approvedPosts.length || 1);
-
-    // Find top performing posts
-    const topPosts = approvedPosts
-      .sort((a, b) => {
-        const aEng = (a.latestMetrics?.likes || 0) + (a.latestMetrics?.retweets || 0) + (a.latestMetrics?.replies || 0);
-        const bEng = (b.latestMetrics?.likes || 0) + (b.latestMetrics?.retweets || 0) + (b.latestMetrics?.replies || 0);
-        return bEng - aEng;
-      })
-      .slice(0, 10);
+    const totalEngagement = stats.totalLikes + stats.totalRetweets + stats.totalReplies;
+    const engagementRate = stats.totalImpressions > 0 ? (totalEngagement / stats.totalImpressions) * 100 : 0;
 
     // Prepare chart data
     const chartData = metricsHistory.map(m => ({
       date: new Date(m.recordedAt).toISOString(),
       postId: m.postId.toString(),
       metrics: {
-        likes: m.metrics.likes || 0,
-        retweets: m.metrics.retweets || 0,
-        replies: m.metrics.replies || 0,
-        impressions: m.metrics.impressions || 0,
-        engagement: (m.metrics.likes || 0) + (m.metrics.retweets || 0) + (m.metrics.replies || 0),
+        likes: m.metrics?.likes || 0,
+        retweets: m.metrics?.retweets || 0,
+        replies: m.metrics?.replies || 0,
+        impressions: m.metrics?.impressions || 0,
+        engagement: (m.metrics?.likes || 0) + (m.metrics?.retweets || 0) + (m.metrics?.replies || 0),
       },
       growth: m.growth,
     }));
 
     const analyticsData = {
       summary: {
-        totalPosts: approvedPosts.length,
+        totalPosts: stats.totalPosts,
         totalEngagement,
-        totalImpressions,
+        totalImpressions: stats.totalImpressions,
         engagementRate,
         averages: {
-          likesPerPost: Math.round(totalLikes / (approvedPosts.length || 1)),
-          retweetsPerPost: Math.round(totalRetweets / (approvedPosts.length || 1)),
-          repliesPerPost: Math.round(totalReplies / (approvedPosts.length || 1)),
-          impressionsPerPost: Math.round(totalImpressions / (approvedPosts.length || 1)),
+          likesPerPost: Math.round(stats.totalLikes / (stats.totalPosts || 1)),
+          retweetsPerPost: Math.round(stats.totalRetweets / (stats.totalPosts || 1)),
+          repliesPerPost: Math.round(stats.totalReplies / (stats.totalPosts || 1)),
+          impressionsPerPost: Math.round(stats.totalImpressions / (stats.totalPosts || 1)),
         },
         growth: {
-          likes: avgLikesGrowth,
-          retweets: avgRetweetsGrowth,
-          replies: avgRepliesGrowth,
-          impressions: avgImpressionsGrowth,
+          likes: stats.avgLikesGrowth,
+          retweets: stats.avgRetweetsGrowth,
+          replies: stats.avgRepliesGrowth,
+          impressions: stats.avgImpressionsGrowth,
         },
       },
       breakdown: {
-        likes: totalLikes,
-        retweets: totalRetweets,
-        replies: totalReplies,
-        impressions: totalImpressions,
+        likes: stats.totalLikes,
+        retweets: stats.totalRetweets,
+        replies: stats.totalReplies,
+        impressions: stats.totalImpressions,
       },
       topPosts: topPosts.map(p => ({
-        id: String((p as { _id?: { toString(): string } })._id?.toString()),
+        id: String(p._id?.toString()),
         url: p.postUrl,
         metrics: p.latestMetrics,
-        engagement: (p.latestMetrics?.likes || 0) + (p.latestMetrics?.retweets || 0) + (p.latestMetrics?.replies || 0),
+        engagement: p.totalEngagement,
         createdAt: p.createdAt,
       })),
       chartData,
@@ -165,11 +232,11 @@ export async function GET(request: NextRequest) {
     };
 
     logger.info(
-      { 
-        creatorId, 
-        range, 
-        postsCount: approvedPosts.length, 
-        metricsCount: metricsHistory.length 
+      {
+        creatorId,
+        range,
+        postsCount: stats.totalPosts,
+        metricsCount: metricsHistory.length
       },
       'Creator analytics retrieved successfully'
     );

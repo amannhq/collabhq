@@ -59,12 +59,50 @@ export async function GET(request: NextRequest) {
       if (toDate) dateFilter.createdAt.$lte = new Date(toDate);
     }
 
-    // Fetch all posts with populated data
-    const posts = await Post.find(dateFilter)
-      .populate('creatorId', 'name email twitterHandle')
-      .populate('projectId', 'name')
-      .sort({ createdAt: -1 })
-      .lean();
+    // OPTIMIZED: Use aggregation with $lookup for better performance
+    // Limit to reasonable number for export (e.g., 10,000 posts)
+    const posts = await Post.aggregate([
+      { $match: dateFilter },
+      { $sort: { createdAt: -1 } },
+      { $limit: 10000 }, // Reasonable limit for CSV/PDF export
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creatorId',
+          foreignField: '_id',
+          pipeline: [
+            { $project: { name: 1, email: 1, 'creatorProfile.twitterHandle': 1 } }
+          ],
+          as: 'creatorData'
+        }
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectId',
+          foreignField: '_id',
+          pipeline: [
+            { $project: { name: 1 } }
+          ],
+          as: 'projectData'
+        }
+      },
+      {
+        $project: {
+          postUrl: 1,
+          status: 1,
+          'latestMetrics.likes': 1,
+          'latestMetrics.retweets': 1,
+          'latestMetrics.replies': 1,
+          'latestMetrics.impressions': 1,
+          createdAt: 1,
+          publishedAt: 1,
+          postedAt: 1,
+          creatorId: { $arrayElemAt: ['$creatorData', 0] },
+          projectId: { $arrayElemAt: ['$projectData', 0] }
+        }
+      }
+    ]);
 
     if (format === 'csv') {
       const csv = generateCSV(posts);
@@ -124,13 +162,13 @@ function generateCSV(posts: unknown[]): string {
     'Impressions',
     'Engagement Rate',
     'Created At',
-    'Published At',
+    'Posted At',
   ];
 
   const rows = posts.map((p) => {
     const post = p as {
       postUrl?: string;
-      creatorId?: { name?: string; email?: string };
+      creatorId?: { name?: string; email?: string; creatorProfile?: { twitterHandle?: string } };
       projectId?: { name?: string };
       status?: string;
       latestMetrics?: {
@@ -140,7 +178,7 @@ function generateCSV(posts: unknown[]): string {
         impressions?: number;
       };
       createdAt?: Date;
-      publishedAt?: Date;
+      postedAt?: Date;
     };
 
     const creator = post.creatorId;
@@ -165,7 +203,7 @@ function generateCSV(posts: unknown[]): string {
       metrics.impressions || 0,
       engagementRate.toFixed(2),
       post.createdAt ? new Date(post.createdAt).toISOString() : '',
-      post.publishedAt ? new Date(post.publishedAt).toISOString() : '',
+      post.postedAt ? new Date(post.postedAt).toISOString() : '',
     ].join(',');
   });
 

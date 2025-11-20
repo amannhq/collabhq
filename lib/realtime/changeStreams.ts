@@ -152,6 +152,13 @@ class ChangeStreamManager {
       throw new Error('MongoDB connection is not ready for change streams');
     }
 
+    // Increase max listeners for Mongoose connection to handle multiple SSE connections
+    // Each SSE connection subscribes to change events, which can exceed the default limit (10)
+    // in development with hot reloading
+    if (connection.setMaxListeners) {
+      connection.setMaxListeners(50); // Allow up to 50 concurrent SSE connections
+    }
+
     const results = await Promise.allSettled(
       WATCHED_COLLECTIONS.map((collection) => this.createStream(collection))
     );

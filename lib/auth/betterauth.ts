@@ -51,6 +51,8 @@ const OTP_EMAIL_SUBJECTS = {
 } as const;
 
 // Create MongoDB client for Better Auth
+// Note: Better Auth uses its own MongoDB client to avoid type conflicts with Mongoose
+// Both will reuse the same connection pool at the MongoDB driver level
 const client = new MongoClient(process.env.MONGODB_URI);
 const db = client.db();
 
@@ -68,14 +70,19 @@ export const auth = betterAuth({
     autoSignIn: true,
   },
   
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      accessType: 'offline',
-      prompt: 'select_account consent',
-    },
-  },
+  // Only enable Google OAuth if credentials are provided
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            accessType: 'offline',
+            prompt: 'select_account consent',
+          },
+        },
+      }
+    : {}),
   
   account: {
     accountLinking: {
@@ -91,6 +98,8 @@ export const auth = betterAuth({
       enabled: true,
       maxAge: AUTH_CONSTANTS.COOKIE_CACHE_MAX_AGE,
     },
+    // Include additional fields in session for faster access
+    freshAge: 0, // Always fetch fresh session data to include role/org changes
   },
 
   // Rate limiting recommended by Better Auth performance guide
