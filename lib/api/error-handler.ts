@@ -37,10 +37,16 @@ export class ApiError extends Error {
  * - Performance monitoring
  * - Production-safe error messages
  */
-export function withErrorHandler<T = unknown>(
-  handler: (request: NextRequest, context?: T) => Promise<NextResponse>
+export function withErrorHandler(
+  handler: (
+    request: NextRequest,
+    context?: { params?: Promise<Record<string, string>> }
+  ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, context?: T): Promise<NextResponse> => {
+  return async (
+    request: NextRequest,
+    context?: { params?: Promise<Record<string, string>> }
+  ): Promise<NextResponse> => {
     const correlationId = randomUUID();
     const startTime = Date.now();
 

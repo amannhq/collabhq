@@ -128,7 +128,7 @@ export async function optionalAuth(request?: NextRequest): Promise<AuthContext |
  * Higher-Order Function for routes requiring authentication
  * Automatically handles authentication and passes user context to handler
  *
- * @param handler - Route handler function that receives request, auth context, and optional params
+ * @param handler - Route handler function that receives request, auth context
  * @returns Wrapped route handler
  *
  * @example
@@ -142,16 +142,18 @@ export async function optionalAuth(request?: NextRequest): Promise<AuthContext |
  * );
  * ```
  */
-export function withAuth<T = unknown>(
+export function withAuth(
   handler: (
     request: NextRequest,
-    context: AuthContext,
-    params?: T
+    context: AuthContext
   ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, params?: T): Promise<NextResponse> => {
+  return async (
+    request: NextRequest,
+    _context?: { params?: Promise<Record<string, string>> }
+  ): Promise<NextResponse> => {
     const authContext = await requireAuth(request);
-    return handler(request, authContext, params);
+    return handler(request, authContext);
   };
 }
 
@@ -159,7 +161,7 @@ export function withAuth<T = unknown>(
  * Higher-Order Function for routes requiring admin access
  * Automatically handles authentication and admin role verification
  *
- * @param handler - Route handler function that receives request, auth context, and optional params
+ * @param handler - Route handler function that receives request, auth context
  * @returns Wrapped route handler
  *
  * @example
@@ -173,16 +175,18 @@ export function withAuth<T = unknown>(
  * );
  * ```
  */
-export function withAdminAuth<T = unknown>(
+export function withAdminAuth(
   handler: (
     request: NextRequest,
-    context: AuthContext,
-    params?: T
+    context: AuthContext
   ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, params?: T): Promise<NextResponse> => {
+  return async (
+    request: NextRequest,
+    _context?: { params?: Promise<Record<string, string>> }
+  ): Promise<NextResponse> => {
     const authContext = await requireAdmin(request);
-    return handler(request, authContext, params);
+    return handler(request, authContext);
   };
 }
 
@@ -190,8 +194,8 @@ export function withAdminAuth<T = unknown>(
  * Higher-Order Function for routes requiring organization access
  * Automatically handles authentication and organization access verification
  *
- * @param getOrgId - Function to extract organization ID from request or params
- * @param handler - Route handler function that receives request, auth context, and optional params
+ * @param getOrgId - Function to extract organization ID from request
+ * @param handler - Route handler function that receives request, auth context
  * @returns Wrapped route handler
  *
  * @example
@@ -208,17 +212,19 @@ export function withAdminAuth<T = unknown>(
  * );
  * ```
  */
-export function withOrgAccess<T = unknown>(
-  getOrgId: (request: NextRequest, params?: T) => string,
+export function withOrgAccess(
+  getOrgId: (request: NextRequest) => string,
   handler: (
     request: NextRequest,
-    context: AuthContext,
-    params?: T
+    context: AuthContext
   ) => Promise<NextResponse>
 ) {
-  return async (request: NextRequest, params?: T): Promise<NextResponse> => {
-    const organizationId = getOrgId(request, params);
+  return async (
+    request: NextRequest,
+    _context?: { params?: Promise<Record<string, string>> }
+  ): Promise<NextResponse> => {
+    const organizationId = getOrgId(request);
     const authContext = await requireOrgAccess(organizationId, request);
-    return handler(request, authContext, params);
+    return handler(request, authContext);
   };
 }
