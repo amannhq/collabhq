@@ -43,33 +43,10 @@ export default function CreatorLoginPage() {
         return;
       }
 
-      // Wait for session to be established
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Get user data
-      const userResponse = await fetch('/api/auth/user');
-      
-      if (userResponse.ok) {
-        const userData = await userResponse.json();
-        
-        if (userData.success && userData.data) {
-          const user = userData.data;
-          
-          // Verify this is a creator account
-          if (user.role !== 'creator') {
-            setError('This login is for creators only. Please use the admin login.');
-            await authClient.signOut();
-            return;
-          }
-          
-          // Redirect to creator dashboard
-          router.push(`/creator/${user._id}`);
-          router.refresh();
-          return;
-        }
-      }
-      
-      setError('Failed to get user data. Please try again.');
+      // Redirect to root - let server-side logic handle role-based redirect
+      // This is much faster than multiple client-side API calls
+      router.push('/');
+      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

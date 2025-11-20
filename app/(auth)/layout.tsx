@@ -1,8 +1,19 @@
 // app/(auth)/layout.tsx
 import { ReactNode } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
 
-export default function AuthLayout({ children }: { children: ReactNode }) {
+export default async function AuthLayout({ children }: { children: ReactNode }) {
+  // Redirect authenticated users away from auth pages
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (session?.user) {
+    redirect('/');
+  }
   return (
     <div className="min-h-screen flex flex-col bg-[#f3f1ea]">
       {/* Brand Header */}

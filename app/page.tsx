@@ -17,28 +17,45 @@ export default async function Home() {
     headers: await headers(),
   });
 
-  // If authenticated, redirect to user's organization dashboard
+  // If authenticated, redirect to appropriate dashboard based on user role
   if (session?.user) {
     // Import here to avoid circular dependency issues
     const connectDB = (await import('@/lib/db/mongodb')).default;
     const { User, Organization } = await import('@/lib/db/models');
-    
+
     await connectDB();
-    
-    // Get user from database to find their organization
-    const user = await User.findById(session.user.id).select('organizationId').lean() as { organizationId?: { toString(): string } } | null;
-    
-    if (user?.organizationId) {
-      // Get organization slug
-      const org = await Organization.findById(user.organizationId).select('slug').lean() as { slug?: string } | null;
-      
-      if (org?.slug) {
-        redirect(`/${org.slug}`);
-      }
+
+    // Get user from database to find their role and organization
+    const user = await User.findById(session.user.id).select('role organizationId').lean() as {
+      role?: 'admin' | 'creator' | 'saas-admin';
+      organizationId?: { toString(): string };
+    } | null;
+
+    if (!user) {
+      // User not found in database, redirect to signup
+      redirect('/signup');
     }
-    
-    // If no organization, redirect to signup to complete setup
-    // This should only happen if signup didn't create an org properly
+
+    // Redirect based on user role
+    if (user.role === 'creator') {
+      // Creators go to their creator dashboard
+      redirect(`/creator/${session.user.id}`);
+    } else if (user.role === 'admin' || user.role === 'saas-admin') {
+      // Admins and SaaS admins go to their organization dashboard
+      if (user.organizationId) {
+        // Get organization slug
+        const org = await Organization.findById(user.organizationId).select('slug').lean() as { slug?: string } | null;
+
+        if (org?.slug) {
+          redirect(`/${org.slug}`);
+        }
+      }
+
+      // If no organization, redirect to signup to complete setup
+      redirect('/signup');
+    }
+
+    // Fallback: unknown role, redirect to signup
     redirect('/signup');
   }
 
