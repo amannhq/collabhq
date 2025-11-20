@@ -97,8 +97,8 @@ export function ClientLayout({
           userId={session.user.id}
           organizationId={organization._id}
         />
-        <main className="flex-1 overflow-y-auto bg-background">
-          <div className="p-4 lg:p-6 max-w-full">
+        <main className="flex-1 overflow-y-auto overflow-x-hidden bg-background">
+          <div className="p-4 lg:p-4 max-w-full">
             <SWRProvider>
               {children}
             </SWRProvider>

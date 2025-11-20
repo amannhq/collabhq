@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 
     // Build cache key based on query params
     const queryCacheKey = `creators:${organizationId}:${status || 'all'}:${search || ''}`;
-    const cachedCreators = cache.get<any[]>(queryCacheKey);
+    const cachedCreators = cache.get<unknown[]>(queryCacheKey);
     
     if (cachedCreators) {
       logger.info({ orgId: organizationId, cached: true }, 'Creators list served from cache');

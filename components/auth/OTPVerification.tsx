@@ -137,7 +137,7 @@ export function OTPVerification({ email, onVerify, onResend, isLoading = false }
         <div>
           <CardTitle className="text-3xl font-semibold text-zinc-900 tracking-tight">Verify Your Email</CardTitle>
           <CardDescription className="mt-3 text-base">
-            We've sent a 6-digit verification code to
+            We&apos;ve sent a 6-digit verification code to
             <div className="flex items-center justify-center gap-2 mt-3 bg-[#f3f1ea] rounded-lg px-4 py-2.5 border border-zinc-200">
               <Mail className="w-4 h-4 text-zinc-600" />
               <span className="font-medium text-sm text-zinc-900">{email}</span>
@@ -184,7 +184,7 @@ export function OTPVerification({ email, onVerify, onResend, isLoading = false }
 
           <div className="text-center pt-2">
             <p className="text-sm text-zinc-600 mb-3">
-              Didn't receive the code?
+              Didn&apos;t receive the code?
             </p>
             <Button
               type="button"
@@ -206,7 +206,7 @@ export function OTPVerification({ email, onVerify, onResend, isLoading = false }
 
         <div className="bg-[#f3f1ea] border-2 border-zinc-200 rounded-xl p-4 mt-2">
           <p className="text-sm text-zinc-800 leading-relaxed">
-            <strong className="font-semibold">💡 Tip:</strong> The code expires in 5 minutes. Check your spam folder if you don't see it.
+            <strong className="font-semibold">💡 Tip:</strong> The code expires in 5 minutes. Check your spam folder if you don&apos;t see it.
           </p>
         </div>
       </CardContent>

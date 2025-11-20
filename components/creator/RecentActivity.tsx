@@ -34,75 +34,84 @@ export function RecentActivity({ activities }: RecentActivityProps) {
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'metrics_updated':
-        return <TrendingUp className="h-4 w-4 text-blue-500" />;
+        return <TrendingUp className="h-4 w-4 text-blue-600" />;
       case 'post_submitted':
-        return <FileText className="h-4 w-4 text-purple-500" />;
+        return <FileText className="h-4 w-4 text-purple-600" />;
       case 'post_approved':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case 'post_rejected':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-600" />;
       default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+        return <Clock className="h-4 w-4 text-zinc-500" />;
     }
   };
 
   const getActivityColor = (type: string) => {
     switch (type) {
       case 'metrics_updated':
-        return 'bg-blue-500/10';
+        return 'bg-blue-50';
       case 'post_submitted':
-        return 'bg-purple-500/10';
+        return 'bg-purple-50';
       case 'post_approved':
-        return 'bg-green-500/10';
+        return 'bg-green-50';
       case 'post_rejected':
-        return 'bg-red-500/10';
+        return 'bg-red-50';
       default:
-        return 'bg-gray-500/10';
+        return 'bg-zinc-50';
     }
   };
 
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
-        <CardTitle>Recent Activity</CardTitle>
-        <CardDescription>Your latest actions and updates</CardDescription>
+        <CardTitle className="text-lg">Recent Activity</CardTitle>
+        <CardDescription className="text-xs">Your latest actions and updates</CardDescription>
       </CardHeader>
       <CardContent>
         {activities.length === 0 ? (
           <div className="text-center py-8">
-            <Clock className="mx-auto h-12 w-12 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No recent activity</p>
+            <div className="mx-auto w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mb-3">
+              <Clock className="h-6 w-6 text-zinc-400" />
+            </div>
+            <p className="text-sm font-medium text-zinc-900 mb-1">No recent activity</p>
+            <p className="text-xs text-muted-foreground">Your activity will appear here</p>
           </div>
         ) : (
           <ScrollArea className="h-[400px] pr-4">
-            <div className="space-y-4">
+            <div className="space-y-3">
               {activities.map((activity) => (
-                <div key={activity._id} className="flex gap-3">
-                  <div className={`rounded-full p-2 h-fit ${getActivityColor(activity.type)}`}>
+                <div key={activity._id} className="flex gap-3 p-3 rounded-lg bg-zinc-50 hover:bg-zinc-100 transition-colors">
+                  <div className={`rounded-lg p-2 h-fit ${getActivityColor(activity.type)}`}>
                     {getActivityIcon(activity.type)}
                   </div>
-                  <div className="flex-1 space-y-1">
-                    <p className="text-sm font-medium">{activity.description}</p>
+                  <div className="flex-1 space-y-1 min-w-0">
+                    <p className="text-sm font-medium text-zinc-900">{activity.description}</p>
                     {activity.metadata?.postUrl && (
                       <a
                         href={activity.metadata.postUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-xs text-muted-foreground hover:underline"
+                        className="text-xs text-blue-600 hover:text-blue-800 hover:underline inline-block"
                       >
-                        View Post
+                        View Post →
                       </a>
                     )}
                     {activity.metadata?.metrics && (
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        {activity.metadata.metrics.likes && (
-                          <span>{activity.metadata.metrics.likes} likes</span>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
+                        {activity.metadata.metrics.likes !== undefined && (
+                          <span className="font-medium">{activity.metadata.metrics.likes.toLocaleString()} likes</span>
                         )}
-                        {activity.metadata.metrics.retweets && (
-                          <span>• {activity.metadata.metrics.retweets} retweets</span>
+                        {activity.metadata.metrics.retweets !== undefined && (
+                          <>
+                            <span>•</span>
+                            <span className="font-medium">{activity.metadata.metrics.retweets.toLocaleString()} retweets</span>
+                          </>
                         )}
-                        {activity.metadata.metrics.impressions && (
-                          <span>• {activity.metadata.metrics.impressions} impressions</span>
+                        {activity.metadata.metrics.impressions !== undefined && (
+                          <>
+                            <span>•</span>
+                            <span className="font-medium">{activity.metadata.metrics.impressions.toLocaleString()} impressions</span>
+                          </>
                         )}
                       </div>
                     )}

@@ -5,6 +5,8 @@ import { User, Post } from '@/lib/db/models';
 import type { IUser } from '@/lib/db/models/User';
 import { CreatorSidebar } from '@/components/layout/CreatorSidebar';
 import { Header } from '@/components/layout/Header';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import { CreatorLayoutClient } from '@/components/creator/CreatorLayoutClient';
 
 interface CreatorLayoutProps {
   children: React.ReactNode;
@@ -18,7 +20,7 @@ export default async function CreatorLayout({
   params,
 }: CreatorLayoutProps) {
   const session = await getSession();
-  
+
   if (!session?.user) {
     redirect('/login');
   }
@@ -86,20 +88,19 @@ export default async function CreatorLayout({
   };
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Sidebar */}
-      <CreatorSidebar creator={creatorData} stats={stats} />
-
-      {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
-        <Header orgSlug="" orgName="" />
-        
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-background p-6">
-          {children}
-        </main>
-      </div>
-    </div>
+    <CreatorLayoutClient
+      creatorId={creator._id.toString()}
+      projectId={creator.creatorProfile?.projectId?.toString()}
+    >
+      <SidebarProvider>
+        <CreatorSidebar creator={creatorData} stats={stats} />
+        <SidebarInset>
+          <Header orgSlug="" orgName="" />
+          <main className="flex-1 overflow-y-auto">
+            {children}
+          </main>
+        </SidebarInset>
+      </SidebarProvider>
+    </CreatorLayoutClient>
   );
 }

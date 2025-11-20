@@ -21,6 +21,13 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const organizationId = searchParams.get('orgId') || searchParams.get('organizationId');
     const status = searchParams.get('status') || 'all';
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '20', 10);
+
+    // Validate pagination parameters
+    const validPage = Math.max(1, page);
+    const validLimit = Math.min(Math.max(1, limit), 50); // Max 50 items per page
+    const skip = (validPage - 1) * validLimit;
 
     if (!organizationId) {
       return NextResponse.json(
@@ -39,12 +46,17 @@ export async function GET(request: NextRequest) {
       query.status = status;
     }
 
-    // Get posts with populated data
+    // Get total count for pagination
+    const totalPosts = await Post.countDocuments(query);
+    const totalPages = Math.ceil(totalPosts / validLimit);
+
+    // Get posts with populated data (paginated)
     const posts = await Post.find(query)
       .populate('creatorId', 'name email twitterHandle')
       .populate('projectId', 'name')
       .sort({ createdAt: -1 })
-      .limit(50)
+      .skip(skip)
+      .limit(validLimit)
       .lean();
 
     // Get counts for all statuses
@@ -57,6 +69,7 @@ export async function GET(request: NextRequest) {
     const totalCount = pendingCount + approvedCount + rejectedCount;
 
     // Transform posts data
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const transformedPosts = posts.map((p: any) => ({
       _id: p._id.toString(),
       postUrl: p.postUrl || '',
@@ -85,8 +98,11 @@ export async function GET(request: NextRequest) {
       {
         orgId: organizationId,
         status,
+        page: validPage,
+        limit: validLimit,
         postsCount: transformedPosts.length,
-        totalCount,
+        totalPosts,
+        totalPages,
       },
       'Posts stats fetched'
     );
@@ -100,6 +116,12 @@ export async function GET(request: NextRequest) {
           approved: approvedCount,
           rejected: rejectedCount,
           total: totalCount,
+        },
+        pagination: {
+          page: validPage,
+          limit: validLimit,
+          totalPages,
+          totalPosts,
         },
       },
     },

@@ -80,10 +80,10 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
   };
 
   return (
-    <Card>
+    <Card className="hover:shadow-md transition-shadow">
       <CardHeader>
-        <CardTitle>Submit New Post</CardTitle>
-        <CardDescription>
+        <CardTitle className="text-2xl font-serif font-normal tracking-tight text-zinc-900">Submit New Post</CardTitle>
+        <CardDescription className="text-sm">
           Submit a Twitter/X post for review. Once approved, you can start tracking metrics.
         </CardDescription>
       </CardHeader>
@@ -91,16 +91,17 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Post URL */}
           <div className="space-y-2">
-            <Label htmlFor="postUrl">Post URL *</Label>
+            <Label htmlFor="postUrl" className="text-sm font-medium text-zinc-900">Post URL *</Label>
             <Input
               id="postUrl"
               type="url"
               placeholder="https://twitter.com/username/status/1234567890"
               {...register('postUrl')}
               disabled={isSubmitting || success}
+              className="h-11"
             />
             {errors.postUrl && (
-              <p className="text-sm text-destructive">{errors.postUrl.message}</p>
+              <p className="text-sm text-red-600">{errors.postUrl.message}</p>
             )}
             <p className="text-xs text-muted-foreground">
               Paste the full URL of your Twitter/X post
@@ -109,17 +110,17 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
 
           {/* Error Alert */}
           {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
+            <Alert variant="destructive" className="border-red-200 bg-red-50">
+              <AlertCircle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-600">{error}</AlertDescription>
             </Alert>
           )}
 
           {/* Success Alert */}
           {success && (
-            <Alert className="bg-green-500/10 text-green-500 border-green-500/20">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertDescription>
+            <Alert className="bg-green-50 text-green-700 border-green-200">
+              <CheckCircle2 className="h-4 w-4 text-green-600" />
+              <AlertDescription className="text-green-700">
                 Post submitted successfully! Redirecting to your posts...
               </AlertDescription>
             </Alert>
@@ -130,16 +131,16 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
             <Button
               type="submit"
               disabled={isSubmitting || success}
-              className="flex-1"
+              className="flex-1 bg-zinc-900 hover:bg-zinc-800"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin" />
                   Submitting...
                 </>
               ) : success ? (
                 <>
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  <CheckCircle2 className="h-4 w-4" />
                   Submitted!
                 </>
               ) : (
@@ -157,8 +158,8 @@ export function SubmitPostForm({ creatorId, projectId }: SubmitPostFormProps) {
           </div>
 
           {/* Guidelines */}
-          <div className="p-4 bg-muted rounded-lg space-y-2">
-            <h4 className="text-sm font-medium">Submission Guidelines</h4>
+          <div className="p-4 bg-zinc-50 rounded-lg space-y-2 border border-zinc-200">
+            <h4 className="text-sm font-medium text-zinc-900">Submission Guidelines</h4>
             <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
               <li>Post must be from your verified Twitter/X account</li>
               <li>Posts are reviewed by admins before approval</li>

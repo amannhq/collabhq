@@ -114,7 +114,7 @@ function Pricing({
                                             "text-3xl lg:text-4xl font-serif font-normal",
                                             tier.popular ? "text-white" : "text-zinc-900"
                                         )}>
-                                            Let's talk
+                                            Let&apos;s talk
                                         </span>
                                     ) : (
                                         <>

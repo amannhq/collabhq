@@ -5,7 +5,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import mongoose from 'mongoose';
 
-export async function POST() {
+export async function PATCH() {
   try {
     await connectDB();
 
@@ -25,11 +25,11 @@ export async function POST() {
     const userId = new mongoose.Types.ObjectId(session.user.id);
     const result = await Notification.updateMany(
       { recipientId: userId, status: 'unread' },
-      { 
-        $set: { 
+      {
+        $set: {
           status: 'read',
           readAt: new Date()
-        } 
+        }
       }
     );
 

@@ -77,13 +77,13 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'approved':
-        return <Badge className="bg-green-500/10 text-green-500">Approved</Badge>;
+        return <Badge variant="secondary" className="bg-green-50 text-green-700 hover:bg-green-100">Approved</Badge>;
       case 'pending':
-        return <Badge className="bg-yellow-500/10 text-yellow-500">Pending Review</Badge>;
+        return <Badge variant="secondary" className="bg-yellow-50 text-yellow-700 hover:bg-yellow-100">Pending Review</Badge>;
       case 'rejected':
-        return <Badge className="bg-red-500/10 text-red-500">Rejected</Badge>;
+        return <Badge variant="secondary" className="bg-red-50 text-red-700 hover:bg-red-100">Rejected</Badge>;
       default:
-        return <Badge>{status}</Badge>;
+        return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
@@ -103,91 +103,83 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
       <div>
-        <Button asChild variant="ghost" size="sm" className="mb-4">
+        <Button asChild variant="ghost" size="sm" className="mb-4 hover:bg-zinc-100">
           <Link href={`/creator/${resolvedParams.creatorId}/posts`}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Posts
           </Link>
         </Button>
-        
-        <div className="flex items-start justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold tracking-tight">Post Details</h1>
+
+        <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+          <div className="space-y-2 flex-1 min-w-0">
+            <div className="flex items-center gap-3 flex-wrap">
+              <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Post Details</h1>
               {getStatusBadge(post.status)}
             </div>
             <a
               href={post.postUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-2"
+              className="text-sm text-muted-foreground hover:text-zinc-900 flex items-center gap-2 break-all"
             >
               {post.postUrl}
-              <ExternalLink className="h-3 w-3" />
+              <ExternalLink className="h-3 w-3 flex-shrink-0" />
             </a>
           </div>
-          
-          {post.status === 'approved' && (
-            <Button asChild>
-              <Link href={`/creator/${resolvedParams.creatorId}/posts/${resolvedParams.postId}/update`}>
-                Update Metrics
-              </Link>
-            </Button>
-          )}
         </div>
       </div>
 
       {/* Status Info */}
-      <Card>
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader>
-          <CardTitle>Status Information</CardTitle>
+          <CardTitle className="text-lg">Status Information</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-muted-foreground mb-1">Submitted</p>
-              <p className="font-medium">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div className="p-3 rounded-lg bg-zinc-50">
+              <p className="text-muted-foreground mb-1 text-xs">Submitted</p>
+              <p className="font-medium text-zinc-900">
                 {format(new Date(post.createdAt), 'PPP')}
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground mt-1">
                 {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
               </p>
             </div>
-            
+
             {post.verifiedAt && (
-              <div>
-                <p className="text-muted-foreground mb-1">Approved</p>
-                <p className="font-medium">
+              <div className="p-3 rounded-lg bg-green-50">
+                <p className="text-muted-foreground mb-1 text-xs">Approved</p>
+                <p className="font-medium text-zinc-900">
                   {format(new Date(post.verifiedAt), 'PPP')}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-xs text-muted-foreground mt-1">
                   {formatDistanceToNow(new Date(post.verifiedAt), { addSuffix: true })}
                 </p>
               </div>
             )}
           </div>
-          
+
           {post.status === 'rejected' && post.adminNotes && (
             <>
-              <Separator />
-              <div>
-                <p className="text-sm font-medium text-red-500 mb-2">Rejection Reason</p>
-                <p className="text-sm text-muted-foreground">{post.adminNotes}</p>
+              <Separator className="bg-zinc-200" />
+              <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                <p className="text-sm font-medium text-red-700 mb-1">Rejection Reason</p>
+                <p className="text-xs text-red-600">{post.adminNotes}</p>
               </div>
             </>
           )}
-          
+
           {post.status === 'pending' && (
             <>
-              <Separator />
-              <div className="flex items-start gap-3 p-3 bg-yellow-500/10 rounded-lg">
-                <Clock className="h-5 w-5 text-yellow-500 mt-0.5" />
+              <Separator className="bg-zinc-200" />
+              <div className="flex items-start gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                <Clock className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-sm font-medium text-yellow-500">Awaiting Review</p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm font-medium text-yellow-700">Awaiting Review</p>
+                  <p className="text-xs text-yellow-600 mt-1">
                     Your post is currently being reviewed by an admin. You&apos;ll be notified once it&apos;s approved.
                   </p>
                 </div>
@@ -199,27 +191,27 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
 
       {/* Current Metrics */}
       {post.status === 'approved' && post.latestMetrics && (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>Current Metrics</CardTitle>
-            <CardDescription>Latest performance data</CardDescription>
+            <CardTitle className="text-lg">Current Metrics</CardTitle>
+            <CardDescription className="text-xs">Latest performance data</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Likes */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Heart className="h-4 w-4 text-red-500" />
+              <div className="space-y-2 p-4 rounded-lg bg-zinc-50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Heart className="h-4 w-4 text-red-600" />
                   <span>Likes</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-zinc-900">
                     {post.latestMetrics.likes?.toLocaleString() || 0}
                   </p>
                   {post.growth?.likesDelta !== undefined && (
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-xs">
                       {getGrowthIcon(post.growth.likesDelta)}
-                      <span className={post.growth.likesDelta > 0 ? 'text-green-500' : 'text-red-500'}>
+                      <span className={post.growth.likesDelta > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                         {formatGrowth(post.growth.likesDelta)}
                       </span>
                     </div>
@@ -228,19 +220,19 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
               </div>
 
               {/* Retweets */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Repeat className="h-4 w-4 text-green-500" />
+              <div className="space-y-2 p-4 rounded-lg bg-zinc-50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Repeat className="h-4 w-4 text-green-600" />
                   <span>Retweets</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-zinc-900">
                     {post.latestMetrics.retweets?.toLocaleString() || 0}
                   </p>
                   {post.growth?.retweetsDelta !== undefined && (
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-xs">
                       {getGrowthIcon(post.growth.retweetsDelta)}
-                      <span className={post.growth.retweetsDelta > 0 ? 'text-green-500' : 'text-red-500'}>
+                      <span className={post.growth.retweetsDelta > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                         {formatGrowth(post.growth.retweetsDelta)}
                       </span>
                     </div>
@@ -249,19 +241,19 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
               </div>
 
               {/* Replies */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <MessageCircle className="h-4 w-4 text-blue-500" />
+              <div className="space-y-2 p-4 rounded-lg bg-zinc-50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <MessageCircle className="h-4 w-4 text-blue-600" />
                   <span>Replies</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-zinc-900">
                     {post.latestMetrics.replies?.toLocaleString() || 0}
                   </p>
                   {post.growth?.repliesDelta !== undefined && (
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-xs">
                       {getGrowthIcon(post.growth.repliesDelta)}
-                      <span className={post.growth.repliesDelta > 0 ? 'text-green-500' : 'text-red-500'}>
+                      <span className={post.growth.repliesDelta > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                         {formatGrowth(post.growth.repliesDelta)}
                       </span>
                     </div>
@@ -270,19 +262,19 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
               </div>
 
               {/* Impressions */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Eye className="h-4 w-4 text-purple-500" />
+              <div className="space-y-2 p-4 rounded-lg bg-zinc-50">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Eye className="h-4 w-4 text-purple-600" />
                   <span>Impressions</span>
                 </div>
                 <div className="flex items-baseline gap-2">
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold text-zinc-900">
                     {post.latestMetrics.impressions?.toLocaleString() || 0}
                   </p>
                   {post.growth?.impressionsDelta !== undefined && (
-                    <div className="flex items-center gap-1 text-sm">
+                    <div className="flex items-center gap-1 text-xs">
                       {getGrowthIcon(post.growth.impressionsDelta)}
-                      <span className={post.growth.impressionsDelta > 0 ? 'text-green-500' : 'text-red-500'}>
+                      <span className={post.growth.impressionsDelta > 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
                         {formatGrowth(post.growth.impressionsDelta)}
                       </span>
                     </div>
@@ -296,10 +288,10 @@ export default async function PostDetailPage({ params }: PostDetailPageProps) {
 
       {/* Metrics History */}
       {post.status === 'approved' && timelineEvents.length > 0 && (
-        <Card>
+        <Card className="hover:shadow-md transition-shadow">
           <CardHeader>
-            <CardTitle>Metrics History</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-lg">Metrics History</CardTitle>
+            <CardDescription className="text-xs">
               Track how your post performance has evolved over time
             </CardDescription>
           </CardHeader>

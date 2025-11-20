@@ -17,7 +17,7 @@ interface HeaderProps {
 
 export function Header({ orgSlug, orgName, userName, userEmail, userId, organizationId }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-background px-6 lg:hidden">
+    <header className="sticky top-0 z-50 flex h-16 items-center gap-4 bg-background px-6">
       {/* Mobile Menu */}
       <Sheet>
         <SheetTrigger asChild>
@@ -36,14 +36,17 @@ export function Header({ orgSlug, orgName, userName, userEmail, userId, organiza
         </SheetContent>
       </Sheet>
 
-      {/* Organization Name */}
-      <div className="flex-1">
+      {/* Organization Name - Mobile Only */}
+      <div className="flex-1 lg:hidden">
         <h2 className="text-lg font-semibold">{orgName}</h2>
       </div>
 
+      {/* Spacer for Desktop to push content to right */}
+      <div className="hidden lg:flex lg:flex-1"></div>
+
       {/* Notifications */}
       {userId && (
-        <NotificationBell userId={userId} />
+        <NotificationBell userId={userId} organizationId={organizationId} />
       )}
     </header>
   );

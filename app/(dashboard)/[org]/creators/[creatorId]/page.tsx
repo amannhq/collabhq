@@ -24,7 +24,18 @@ type PopulatedCreatorPost = {
   postUrl?: string;
   status?: string;
   createdAt?: Date;
-  latestMetrics?: { likes?: number; retweets?: number; replies?: number };
+  latestMetrics?: {
+    likes?: number;
+    retweets?: number;
+    replies?: number;
+    quotes?: number;
+    impressions?: number;
+    engagementRate?: number;
+    bookmarks?: number;
+    views?: number;
+    lastUpdatedAt?: Date;
+    updatedBy?: { toString(): string };
+  };
   projectId?: { _id: { toString(): string }; name?: string };
 };
 
@@ -88,12 +99,25 @@ async function getCreatorData(orgId: string, creatorId: string) {
       postUrl: p.postUrl || '',
       status: p.status || 'pending',
       createdAt: p.createdAt || new Date(),
-      latestMetrics: p.latestMetrics,
+      latestMetrics: p.latestMetrics
+        ? {
+          likes: p.latestMetrics.likes || 0,
+          retweets: p.latestMetrics.retweets || 0,
+          replies: p.latestMetrics.replies || 0,
+          quotes: p.latestMetrics.quotes || 0,
+          impressions: p.latestMetrics.impressions || 0,
+          engagementRate: p.latestMetrics.engagementRate || 0,
+          bookmarks: p.latestMetrics.bookmarks || 0,
+          views: p.latestMetrics.views || 0,
+          lastUpdatedAt: p.latestMetrics.lastUpdatedAt,
+          updatedBy: p.latestMetrics.updatedBy?.toString(),
+        }
+        : undefined,
       projectId: p.projectId
         ? {
-            _id: p.projectId._id.toString(),
-            name: p.projectId.name || '',
-          }
+          _id: p.projectId._id.toString(),
+          name: p.projectId.name || '',
+        }
         : null,
     })),
     stats: {

@@ -22,15 +22,12 @@ export const fetcher = async (url: string) => {
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-      const error = new Error('An error occurred while fetching the data.');
+      const error = new Error('An error occurred while fetching the data.') as Error & { info?: unknown; status?: number };
       try {
-        // @ts-ignore
         error.info = await res.json();
       } catch {
-        // @ts-ignore
         error.info = { error: res.statusText || 'Unknown error' };
       }
-      // @ts-ignore
       error.status = res.status;
       
       // If unauthorized, log for debugging

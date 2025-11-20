@@ -4,6 +4,7 @@ import { render } from '@react-email/render';
 import { createLogger } from '@/lib/utils/logger';
 import { InvitationEmail } from './templates/InvitationEmail';
 import { WelcomeEmail } from './templates/WelcomeEmail';
+import { ReminderEmail } from './templates/ReminderEmail';
 import { BaseEmailTemplate } from './templates/BaseEmailTemplate';
 import { ensureDbConnection } from '@/lib/db/mongodb';
 import { EmailTemplate, Organization } from '@/lib/db/models';
@@ -416,6 +417,87 @@ export async function sendWelcomeEmail({
         projectName={projectName || ''}
         temporaryPassword={temporaryPassword || 'temp-password'}
         dashboardUrl={dashboardUrl}
+        branding={branding}
+      />
+    );
+  }
+
+  return sendEmail({
+    to: email,
+    subject,
+    react: emailComponent,
+  });
+}
+
+interface MetricsReminderEmailPost {
+  projectName?: string;
+  postUrl: string;
+  lastMetricsUpdate?: Date | string;
+}
+
+interface MetricsReminderEmailParams {
+  email: string;
+  name: string;
+  organizationId: string;
+  organizationName: string;
+  dashboardUrl: string;
+  posts: MetricsReminderEmailPost[];
+}
+
+export async function sendMetricsReminderEmail({
+  email,
+  name,
+  organizationId,
+  organizationName,
+  dashboardUrl,
+  posts,
+}: MetricsReminderEmailParams) {
+  const { template, branding } = await getTemplateWithBranding(
+    organizationId,
+    'reminder'
+  );
+
+  let emailComponent;
+  let subject = `Reminder: Update your metrics for ${organizationName}`;
+
+  const variables = {
+    name,
+    organizationName,
+    dashboardUrl,
+    pendingPostsCount: posts.length.toString(),
+  };
+
+  if (template) {
+    const bodyContent = replaceVariables(template.content.body, variables);
+    subject = replaceVariables(template.subject, variables);
+    const heading = template.content.heading
+      ? replaceVariables(template.content.heading, variables)
+      : 'Friendly Reminder 📝';
+
+    emailComponent = (
+      <BaseEmailTemplate
+        branding={template.branding ?? branding}
+        content={{
+          heading,
+          body: bodyContent,
+          ctaText: template.content.ctaText || 'Update Metrics',
+          ctaUrl: template.content.ctaUrl
+            ? replaceVariables(template.content.ctaUrl, variables)
+            : dashboardUrl,
+          footerText: template.content.footerText,
+        }}
+        previewText={template.previewText}
+      />
+    );
+
+    void trackTemplateUsage(template._id);
+  } else {
+    emailComponent = (
+      <ReminderEmail
+        name={name}
+        organizationName={organizationName}
+        dashboardUrl={dashboardUrl}
+        posts={posts}
         branding={branding}
       />
     );

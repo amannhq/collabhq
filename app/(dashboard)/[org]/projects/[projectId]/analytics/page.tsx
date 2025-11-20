@@ -5,7 +5,7 @@ import connectDB from '@/lib/db/mongodb';
 import { Project, Organization } from '@/lib/db/models';
 import type { IProject } from '@/lib/db/models/Project';
 import type { IOrganization } from '@/lib/db/models/Organization';
-import { ProjectAnalytics } from '@/components/projects/ProjectAnalytics';
+import { ImprovedProjectAnalytics } from '@/components/projects/ImprovedProjectAnalytics';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -86,7 +86,7 @@ export default async function ProjectAnalyticsPage({ params }: ProjectAnalyticsP
           </div>
         }
       >
-        <ProjectAnalytics
+        <ImprovedProjectAnalytics
           projectId={project._id.toString()}
           organizationId={organization._id.toString()}
         />

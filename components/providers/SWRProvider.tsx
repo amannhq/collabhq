@@ -7,10 +7,10 @@ import { fetcher } from '@/lib/swr/config';
 const CACHE_STORAGE_KEY = 'app-cache';
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-class PersistentCache extends Map<string, any> {
+class PersistentCache extends Map<string, unknown> {
   private metadata = new Map<string, number>();
 
-  constructor(entries: Array<[string, { value: any; timestamp: number }]> = []) {
+  constructor(entries: Array<[string, { value: unknown; timestamp: number }]> = []) {
     super();
     const now = Date.now();
     entries.forEach(([key, entry]) => {
@@ -35,7 +35,7 @@ class PersistentCache extends Map<string, any> {
     return super.get(key);
   }
 
-  override set(key: string, value: any) {
+  override set(key: string, value: unknown) {
     this.metadata.set(key, Date.now());
     return super.set(key, value);
   }
@@ -52,7 +52,7 @@ class PersistentCache extends Map<string, any> {
 
   serialize() {
     const now = Date.now();
-    const entries: Array<[string, { value: any; timestamp: number }]> = [];
+    const entries: Array<[string, { value: unknown; timestamp: number }]> = [];
 
     for (const [key, value] of super.entries()) {
       const timestamp = this.metadata.get(key);
@@ -81,7 +81,7 @@ function restoreCacheEntries() {
       return [];
     }
 
-    return parsed as Array<[string, { value: any; timestamp: number }]>;
+    return parsed as Array<[string, { value: unknown; timestamp: number }]>;
   } catch {
     // Corrupted cache, clear it
     localStorage.removeItem(CACHE_STORAGE_KEY);
@@ -105,7 +105,7 @@ function localStorageProvider() {
 
   const persistAllCaches = () => {
     try {
-      const merged = new Map<string, { value: any; timestamp: number }>();
+      const merged = new Map<string, { value: unknown; timestamp: number }>();
 
       for (const persistentCache of persistentCaches) {
         for (const [key, entry] of persistentCache.serialize()) {
@@ -136,6 +136,8 @@ export function SWRProvider({ children }: { children: React.ReactNode }) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    // Mark as client-side after mount for hydration
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsClient(true);
   }, []);
 

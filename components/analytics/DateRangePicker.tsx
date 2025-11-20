@@ -76,6 +76,14 @@ const presets = [
       to: new Date(),
     }),
   },
+  {
+    label: 'Custom range',
+    value: 'custom',
+    getDates: () => ({
+      from: addDays(new Date(), -30),
+      to: new Date(),
+    }),
+  },
 ];
 
 export function DateRangePicker({
@@ -89,10 +97,33 @@ export function DateRangePicker({
   const handlePresetChange = (value: string) => {
     setSelectedPreset(value);
     const preset = presets.find((p) => p.value === value);
-    if (preset) {
+    if (preset && value !== 'custom') {
       onDateChange(preset.getDates());
     }
   };
+
+  // Update selectedPreset when date changes externally
+  React.useEffect(() => {
+    if (!date?.from || !date?.to) {
+      return;
+    }
+
+    // Check which preset matches the current date range
+    const matchingPreset = presets.find((preset) => {
+      if (preset.value === 'custom') return false;
+      const presetDates = preset.getDates();
+      const isSameRange = 
+        Math.abs(date.from!.getTime() - presetDates.from.getTime()) < 60000 && // Within 1 minute
+        Math.abs(date.to!.getTime() - presetDates.to.getTime()) < 60000;
+      return isSameRange;
+    });
+
+    if (matchingPreset) {
+      setSelectedPreset(matchingPreset.value);
+    } else {
+      setSelectedPreset('custom');
+    }
+  }, [date]);
 
   return (
     <div className={cn('flex gap-2', className)}>
@@ -100,7 +131,7 @@ export function DateRangePicker({
         <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Select period" />
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent position="popper" align="start" sideOffset={4}>
           {presets.map((preset) => (
             <SelectItem key={preset.value} value={preset.value}>
               {preset.label}
@@ -134,7 +165,13 @@ export function DateRangePicker({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
+        <PopoverContent 
+          className="w-auto p-0" 
+          align="end" 
+          side="bottom"
+          sideOffset={4}
+          avoidCollisions={true}
+        >
           <Calendar
             initialFocus
             mode="range"

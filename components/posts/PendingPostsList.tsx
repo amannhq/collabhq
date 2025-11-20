@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { toast } from 'sonner';
+import { UpdateMetricsModal } from '@/components/admin/UpdateMetricsModal';
 
 interface Post {
   _id: string;
@@ -48,13 +49,21 @@ export function PendingPostsList({ posts }: PendingPostsListProps) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [rejectDialogOpen, setRejectDialogOpen] = useState(false);
+  const [metricsDialogOpen, setMetricsDialogOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
 
-  const handleApprove = async (postId: string) => {
-    setLoadingId(postId);
+  const openMetricsDialog = (post: Post) => {
+    setSelectedPost(post);
+    setMetricsDialogOpen(true);
+  };
+
+  const handleApproveWithMetrics = async () => {
+    if (!selectedPost) return;
+
+    setLoadingId(selectedPost._id);
     try {
-      const response = await fetch(`/api/posts/${postId}/approve`, {
+      const response = await fetch(`/api/posts/${selectedPost._id}/approve`, {
         method: 'POST',
       });
 
@@ -65,6 +74,7 @@ export function PendingPostsList({ posts }: PendingPostsListProps) {
       }
 
       toast.success('Post approved successfully');
+      setMetricsDialogOpen(false);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Failed to approve post');
@@ -136,27 +146,27 @@ export function PendingPostsList({ posts }: PendingPostsListProps) {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {posts.map((post) => (
           <Card key={post._id} className="flex flex-col">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10">
-                    <AvatarFallback>
-                      {getInitials(post.creatorId.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold truncate">
-                      {post.creatorId.name}
+            <CardHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Avatar className="h-10 w-10">
+                  <AvatarFallback>
+                    {getInitials(post.creatorId.name)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold truncate">
+                    {post.creatorId.name}
+                  </p>
+                  {post.creatorId.twitterHandle && (
+                    <p className="text-xs text-muted-foreground">
+                      @{post.creatorId.twitterHandle}
                     </p>
-                    {post.creatorId.twitterHandle && (
-                      <p className="text-xs text-muted-foreground">
-                        @{post.creatorId.twitterHandle}
-                      </p>
-                    )}
-                  </div>
+                  )}
                 </div>
-                <Badge variant="secondary">{post.projectId.name}</Badge>
               </div>
+              <Badge variant="secondary" className="w-fit">
+                {post.projectId.name}
+              </Badge>
             </CardHeader>
 
             <CardContent className="flex-1">
@@ -191,7 +201,7 @@ export function PendingPostsList({ posts }: PendingPostsListProps) {
                 variant="default"
                 size="sm"
                 className="flex-1"
-                onClick={() => handleApprove(post._id)}
+                onClick={() => openMetricsDialog(post)}
                 disabled={loadingId === post._id}
               >
                 <Check className="h-4 w-4 mr-1" />
@@ -211,6 +221,16 @@ export function PendingPostsList({ posts }: PendingPostsListProps) {
           </Card>
         ))}
       </div>
+
+      {/* Metrics Modal */}
+      {selectedPost && (
+        <UpdateMetricsModal
+          open={metricsDialogOpen}
+          onOpenChange={setMetricsDialogOpen}
+          postId={selectedPost._id}
+          onSuccess={handleApproveWithMetrics}
+        />
+      )}
 
       {/* Rejection Dialog */}
       <Dialog open={rejectDialogOpen} onOpenChange={setRejectDialogOpen}>

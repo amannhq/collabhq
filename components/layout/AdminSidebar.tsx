@@ -9,7 +9,6 @@ import {
   FileText,
   BarChart3,
   Settings,
-  Building2,
   PanelLeft,
 } from 'lucide-react';
 import {
@@ -26,7 +25,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { NotificationBell } from '@/components/notifications';
+
 
 interface AdminSidebarProps {
   orgSlug: string;
@@ -79,7 +78,7 @@ const navigationItems: NavItem[] = [
   },
 ];
 
-export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, organizationId, pendingPostsCount = 0 }: AdminSidebarProps) {
+export function AdminSidebar({ orgSlug, orgName, userName, userEmail, pendingPostsCount = 0 }: AdminSidebarProps) {
   const pathname = usePathname();
   const { open, toggleSidebar } = useSidebar();
 
@@ -108,9 +107,9 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, or
         <div className="flex items-center justify-between gap-2">
           <SidebarMenu className="flex-1">
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                size="lg" 
-                asChild 
+              <SidebarMenuButton
+                size="lg"
+                asChild
                 onClick={(e) => {
                   if (!open) {
                     e.preventDefault();
@@ -119,22 +118,14 @@ export function AdminSidebar({ orgSlug, orgName, userName, userEmail, userId, or
                 }}
               >
                 <Link href={`/${orgSlug}`}>
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <Building2 className="size-4" />
-                  </div>
                   <div className="flex flex-col gap-0.5 leading-none">
-                    <span className="font-semibold">{orgName}</span>
+                    <span className="text-2xl font-serif font-normal tracking-normal text-accent-foreground">{orgName}</span>
                   </div>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
           <div className="flex items-center gap-1">
-            {open && userId && (
-              <div className="hidden lg:block">
-                <NotificationBell userId={userId} />
-              </div>
-            )}
             {open && (
               <Button
                 variant="ghost"

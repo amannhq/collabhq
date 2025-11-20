@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:init": "bun scripts/init-db.ts",
     "db:seed": "bun scripts/seed-db.ts",
+    "db:seed:admin": "bun scripts/seed-admin-dashboard.ts",
     "db:seed:templates": "bun scripts/seed-email-templates.ts",
     "db:seed:notifications": "bun scripts/seed-notifications.ts",
     "db:backup": "bun scripts/backup-db.ts",

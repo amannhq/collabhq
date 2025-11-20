@@ -98,17 +98,17 @@ export function CreatorsClient({
 
   if (error) {
     return (
-      <div className="flex-1 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Creators</h2>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Creators</h1>
+            <p className="text-muted-foreground mt-1">
               Manage and track your content creators
             </p>
           </div>
           <Link href={`/${orgSlug}/creators/invite`}>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
+            <Button className="bg-zinc-900 hover:bg-zinc-800">
+              <UserPlus className="h-4 w-4" />
               Invite Creator
             </Button>
           </Link>
@@ -125,17 +125,17 @@ export function CreatorsClient({
 
   if (isLoading) {
     return (
-      <div className="flex-1 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="flex-1 space-y-6 p-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold tracking-tight">Creators</h2>
-            <p className="text-muted-foreground">
+            <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Creators</h1>
+            <p className="text-muted-foreground mt-1">
               Manage and track your content creators
             </p>
           </div>
           <Link href={`/${orgSlug}/creators/invite`}>
-            <Button>
-              <UserPlus className="mr-2 h-4 w-4" />
+            <Button className="bg-zinc-900 hover:bg-zinc-800">
+              <UserPlus className="h-4 w-4" />
               Invite Creator
             </Button>
           </Link>
@@ -148,18 +148,18 @@ export function CreatorsClient({
   const creators = data?.data || [];
 
   return (
-    <div className="flex-1 space-y-6">
+    <div className="flex-1 space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Creators</h2>
-          <p className="text-muted-foreground">
+          <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Creators</h1>
+          <p className="text-muted-foreground mt-1">
             Manage and track your content creators
           </p>
         </div>
         <Link href={`/${orgSlug}/creators/invite`}>
-          <Button>
-            <UserPlus className="mr-2 h-4 w-4" />
+          <Button className="bg-zinc-900 hover:bg-zinc-800">
+            <UserPlus className="h-4 w-4" />
             Invite Creator
           </Button>
         </Link>

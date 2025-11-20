@@ -1,6 +1,12 @@
 // src/types/activity.ts
 
-import { ObjectId, ActivityAction, Severity, RequestMetadata } from './index';
+import {
+  ObjectId,
+  ActivityAction,
+  Severity,
+  RequestMetadata,
+  PaginationMeta,
+} from './index';
 
 export interface ActivityChange {
   field: string;
@@ -75,8 +81,8 @@ export interface ActivityFilters {
   entityType?: string;
   severity?: Severity;
   dateRange?: {
-    start: Date;
-    end: Date;
+    start?: Date;
+    end?: Date;
   };
   tags?: string[];
 }
@@ -88,4 +94,22 @@ export interface ActivityLogWithUser extends ActivityLog {
     email: string;
     avatar?: string;
   };
+}
+
+export interface ActivityLogResponseDto
+  extends Omit<
+    ActivityLog,
+    '_id' | 'userId' | 'organizationId' | 'projectId' | 'entityId' | 'createdAt'
+  > {
+  _id: string;
+  userId: string;
+  organizationId: string;
+  projectId?: string;
+  entityId: string;
+  createdAt: string;
+}
+
+export interface ActivityLogListPayload {
+  logs: ActivityLogResponseDto[];
+  pagination: PaginationMeta;
 }

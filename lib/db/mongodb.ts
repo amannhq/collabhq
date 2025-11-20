@@ -202,7 +202,17 @@ function getConnectionStatus(): {
     host: connection.host,
     name: connection.name,
     poolSize: options.maxPoolSize,
-    activeConnections: (connection as any).client?.topology?.s?.pool?.totalConnectionCount,
+    activeConnections: (connection as {
+      client?: {
+        topology?: {
+          s?: {
+            pool?: {
+              totalConnectionCount?: number;
+            };
+          };
+        };
+      };
+    }).client?.topology?.s?.pool?.totalConnectionCount,
   };
 }
 

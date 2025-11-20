@@ -5,15 +5,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { ExternalLink, Eye, ThumbsUp, Repeat2, MessageCircle, BarChart3 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface Post {
   _id: string;
@@ -47,15 +38,15 @@ interface PostsTableProps {
 const statusConfig = {
   pending: {
     label: 'Pending',
-    variant: 'secondary' as const,
+    className: 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100 border-yellow-200',
   },
   approved: {
     label: 'Approved',
-    variant: 'default' as const,
+    className: 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200',
   },
   rejected: {
     label: 'Rejected',
-    variant: 'destructive' as const,
+    className: 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200',
   },
 };
 
@@ -74,15 +65,6 @@ export function PostsTable({ posts, orgSlug }: PostsTableProps) {
     );
   }
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
   const formatNumber = (num?: number) => {
     if (!num) return '0';
     if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
@@ -91,133 +73,128 @@ export function PostsTable({ posts, orgSlug }: PostsTableProps) {
   };
 
   return (
-    <div className="rounded-lg border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Creator</TableHead>
-            <TableHead>Project</TableHead>
-            <TableHead>Post</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Engagement</TableHead>
-            <TableHead>Posted</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {posts.map((post) => (
-            <TableRow key={post._id}>
-              {/* Creator */}
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="text-xs">
-                      {getInitials(post.creatorId.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="text-sm font-medium">{post.creatorId.name}</p>
-                    {post.creatorId.twitterHandle && (
-                      <p className="text-xs text-muted-foreground">
-                        @{post.creatorId.twitterHandle}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-
-              {/* Project */}
-              <TableCell>
-                <span className="text-sm font-medium">{post.projectId.name}</span>
-              </TableCell>
-
-              {/* Post */}
-              <TableCell>
-                <div className="max-w-xs">
-                  {post.caption ? (
-                    <p className="line-clamp-2 text-sm text-muted-foreground">
-                      {post.caption}
-                    </p>
-                  ) : (
-                    <a
-                      href={post.postUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                    >
-                      View post <ExternalLink className="h-3 w-3" />
-                    </a>
-                  )}
-                </div>
-              </TableCell>
-
-              {/* Status */}
-              <TableCell>
-                <Badge variant={statusConfig[post.status].variant}>
-                  {statusConfig[post.status].label}
-                </Badge>
-              </TableCell>
-
-              {/* Engagement */}
-              <TableCell>
-                {post.latestMetrics ? (
-                  <div className="flex gap-3 text-xs text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <ThumbsUp className="h-3 w-3" />
-                      {formatNumber(post.latestMetrics.likes)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Repeat2 className="h-3 w-3" />
-                      {formatNumber(post.latestMetrics.retweets)}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <MessageCircle className="h-3 w-3" />
-                      {formatNumber(post.latestMetrics.replies)}
-                    </div>
-                  </div>
-                ) : (
-                  <span className="text-xs text-muted-foreground">No data</span>
+    <table className="w-full border-collapse">
+      <thead className="bg-zinc-50 sticky top-0 z-10">
+        <tr className="border-b-2 border-zinc-200">
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[180px]">
+            Creator
+          </th>
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[140px]">
+            Project
+          </th>
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[200px]">
+            Post
+          </th>
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[100px]">
+            Status
+          </th>
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[200px]">
+            Engagement
+          </th>
+          <th className="py-3.5 px-4 text-left text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[130px]">
+            Posted
+          </th>
+          <th className="py-3.5 px-4 text-center text-xs font-semibold text-zinc-900 uppercase tracking-wide bg-zinc-50 w-[70px]">
+            Actions
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-white divide-y divide-zinc-100">
+        {posts.map((post) => (
+          <tr key={post._id} className="hover:bg-zinc-50/50 transition-colors">
+            {/* Creator */}
+            <td className="py-4 px-4 align-top">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-zinc-900 truncate">
+                  {post.creatorId.name}
+                </p>
+                {post.creatorId.twitterHandle && (
+                  <p className="text-xs text-zinc-500 truncate">
+                    @{post.creatorId.twitterHandle}
+                  </p>
                 )}
-              </TableCell>
+              </div>
+            </td>
 
-              {/* Posted Time */}
-              <TableCell>
-                <span className="text-sm text-muted-foreground">
-                  {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                </span>
-              </TableCell>
+            {/* Project */}
+            <td className="py-4 px-4 align-top">
+              <span className="text-sm font-medium text-zinc-900">
+                {post.projectId.name}
+              </span>
+            </td>
 
-              {/* Actions */}
-              <TableCell className="text-right">
-                <div className="flex justify-end gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
+            {/* Post */}
+            <td className="py-4 px-4 align-top">
+              <div className="max-w-xs">
+                {post.caption ? (
+                  <p className="line-clamp-2 text-sm text-zinc-600 leading-relaxed">
+                    {post.caption}
+                  </p>
+                ) : (
+                  <a
+                    href={post.postUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 hover:underline font-medium transition-colors"
                   >
-                    <Link href={`/${orgSlug}/posts/${post._id}`}>
-                      <Eye className="h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    asChild
-                  >
-                    <a
-                      href={post.postUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
+                    View post <ExternalLink className="h-3.5 w-3.5" />
+                  </a>
+                )}
+              </div>
+            </td>
+
+            {/* Status */}
+            <td className="py-4 px-4 align-top">
+              <Badge className={statusConfig[post.status].className}>
+                {statusConfig[post.status].label}
+              </Badge>
+            </td>
+
+            {/* Engagement */}
+            <td className="py-4 px-4 align-top">
+              {post.latestMetrics ? (
+                <div className="flex gap-4 text-xs">
+                  <div className="flex items-center gap-1.5 text-zinc-600">
+                    <ThumbsUp className="h-3.5 w-3.5 text-zinc-400" />
+                    <span className="font-medium">{formatNumber(post.latestMetrics.likes)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-zinc-600">
+                    <Repeat2 className="h-3.5 w-3.5 text-zinc-400" />
+                    <span className="font-medium">{formatNumber(post.latestMetrics.retweets)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-zinc-600">
+                    <MessageCircle className="h-3.5 w-3.5 text-zinc-400" />
+                    <span className="font-medium">{formatNumber(post.latestMetrics.replies)}</span>
+                  </div>
                 </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+              ) : (
+                <span className="text-xs text-zinc-400 font-medium">No data</span>
+              )}
+            </td>
+
+            {/* Posted Time */}
+            <td className="py-4 px-4 align-top">
+              <span className="text-sm text-zinc-600">
+                {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+              </span>
+            </td>
+
+            {/* Actions */}
+            <td className="py-4 px-4 align-top text-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                asChild
+                className="h-8 w-8 p-0 hover:bg-zinc-100"
+              >
+                <Link href={`/${orgSlug}/posts/${post._id}`}>
+                  <Eye className="h-4 w-4 text-zinc-600" />
+                </Link>
+              </Button>
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }

@@ -6,7 +6,6 @@ import {
   Container,
   Section,
   Text,
-  Img,
   Hr,
 } from '@react-email/components';
 
@@ -65,7 +64,7 @@ export const OTPEmail = ({ otp, type }: OTPEmailProps) => {
               © 2024 Collab. Built for creator-first teams.
             </Text>
             <Text style={footerLink}>
-              If you didn't request this code, please ignore this email.
+              If you didn&apos;t request this code, please ignore this email.
             </Text>
           </Section>
         </Container>

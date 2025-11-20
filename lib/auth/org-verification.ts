@@ -27,7 +27,7 @@ export async function verifyOrganizationAccess(
 ): Promise<OrgVerificationResult | null> {
   try {
     await ensureDbConnection();
-    
+
     const organization = await Organization.findOne({ slug: orgSlug })
       .select('_id ownerId name slug')
       .lean<IOrganization>();

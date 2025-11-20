@@ -37,10 +37,10 @@ export default async function SettingsPage({ params }: Props) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight">Settings</h2>
-        <p className="text-muted-foreground">
+        <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Settings</h1>
+        <p className="text-muted-foreground mt-1">
           Manage your organization&apos;s settings and preferences
         </p>
       </div>
@@ -85,7 +85,16 @@ export default async function SettingsPage({ params }: Props) {
           <Suspense fallback={<Skeleton className="h-[600px] w-full" />}>
             <BrandingSettings
               organizationId={orgAccess.organizationId}
-              currentSettings={organization.settings}
+              currentSettings={{
+                logo: organization.settings?.logo,
+                primaryColor: organization.settings?.primaryColor || '#3b82f6',
+                secondaryColor: organization.settings?.secondaryColor || '#10b981',
+                notificationEmail: organization.settings?.notificationEmail,
+                timezone: organization.settings?.timezone || 'UTC',
+                dateFormat: organization.settings?.dateFormat || 'MM/DD/YYYY',
+                emailSignature: organization.settings?.emailSignature,
+                emailFromName: organization.settings?.emailFromName,
+              }}
             />
           </Suspense>
         </TabsContent>

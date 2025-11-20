@@ -84,7 +84,7 @@
       "schedule": "0 9 * * *"
     },
     {
-      "path": "/api/cron/cleanup-expired-sessions",
+      "path": "/api/cron/cleanup-expired",
       "schedule": "0 0 * * *"
     }
   ],

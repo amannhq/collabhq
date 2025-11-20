@@ -39,11 +39,11 @@ export default async function NewPostPage({ params }: NewPostPageProps) {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl p-6">
       {/* Back Button */}
-      <Button asChild variant="ghost" size="sm">
+      <Button asChild variant="ghost" size="sm" className="hover:bg-zinc-100">
         <Link href={`/creator/${resolvedParams.creatorId}/posts`}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="h-4 w-4" />
           Back to Posts
         </Link>
       </Button>

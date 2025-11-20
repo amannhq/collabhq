@@ -102,37 +102,37 @@ export default async function CreatorAnalyticsPage({
     ((topPost as { latestMetrics?: { likes?: number; retweets?: number; replies?: number } }).latestMetrics?.replies || 0) : 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-          <p className="text-muted-foreground mt-2">
+          <h1 className="text-3xl font-serif font-normal tracking-tight text-zinc-900">Analytics</h1>
+          <p className="text-muted-foreground mt-1">
             Track your content performance and growth
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <a
             href={`/creator/${creatorId}/analytics?range=7d`}
-            className={`px-3 py-1 text-sm rounded-md ${range === '7d' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${range === '7d' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
           >
             7 Days
           </a>
           <a
             href={`/creator/${creatorId}/analytics?range=30d`}
-            className={`px-3 py-1 text-sm rounded-md ${range === '30d' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${range === '30d' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
           >
             30 Days
           </a>
           <a
             href={`/creator/${creatorId}/analytics?range=90d`}
-            className={`px-3 py-1 text-sm rounded-md ${range === '90d' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${range === '90d' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
           >
             90 Days
           </a>
           <a
             href={`/creator/${creatorId}/analytics?range=all`}
-            className={`px-3 py-1 text-sm rounded-md ${range === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted hover:bg-muted/80'}`}
+            className={`px-3 py-1.5 text-sm rounded-md transition-colors ${range === 'all' ? 'bg-zinc-900 text-white' : 'bg-zinc-100 hover:bg-zinc-200 text-zinc-900'}`}
           >
             All Time
           </a>
@@ -169,18 +169,18 @@ export default async function CreatorAnalyticsPage({
 
       {/* Charts */}
       <Tabs defaultValue="engagement" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="engagement">Engagement</TabsTrigger>
-          <TabsTrigger value="growth">Growth</TabsTrigger>
-          <TabsTrigger value="breakdown">Breakdown</TabsTrigger>
+        <TabsList className="bg-zinc-100">
+          <TabsTrigger value="engagement" className="data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Engagement</TabsTrigger>
+          <TabsTrigger value="growth" className="data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Growth</TabsTrigger>
+          <TabsTrigger value="breakdown" className="data-[state=active]:bg-zinc-900 data-[state=active]:text-white">Breakdown</TabsTrigger>
         </TabsList>
 
         {/* Engagement Chart */}
         <TabsContent value="engagement" className="space-y-4">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>Engagement Over Time</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg">Engagement Over Time</CardTitle>
+              <CardDescription className="text-xs">
                 Track likes, retweets, and replies across all posts
               </CardDescription>
             </CardHeader>
@@ -193,10 +193,10 @@ export default async function CreatorAnalyticsPage({
 
         {/* Growth Chart */}
         <TabsContent value="growth" className="space-y-4">
-          <Card>
+          <Card className="hover:shadow-md transition-shadow">
             <CardHeader>
-              <CardTitle>Growth Trends</CardTitle>
-              <CardDescription>
+              <CardTitle className="text-lg">Growth Trends</CardTitle>
+              <CardDescription className="text-xs">
                 Monitor how your metrics are growing
               </CardDescription>
             </CardHeader>
@@ -211,23 +211,23 @@ export default async function CreatorAnalyticsPage({
         <TabsContent value="breakdown" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
             {/* Engagement Breakdown */}
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Engagement Breakdown</CardTitle>
-                <CardDescription>Distribution of engagement types</CardDescription>
+                <CardTitle className="text-lg">Engagement Breakdown</CardTitle>
+                <CardDescription className="text-xs">Distribution of engagement types</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <Heart className="h-4 w-4 text-red-500" />
-                      <span>Likes</span>
+                      <Heart className="h-4 w-4 text-red-600" />
+                      <span className="text-zinc-900">Likes</span>
                     </div>
-                    <span className="font-medium">{totalLikes.toLocaleString()}</span>
+                    <span className="font-medium text-zinc-900">{totalLikes.toLocaleString()}</span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-red-500"
+                      className="h-full bg-red-600"
                       style={{ width: `${(totalLikes / totalEngagement) * 100}%` }}
                     />
                   </div>
@@ -236,14 +236,14 @@ export default async function CreatorAnalyticsPage({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <Repeat className="h-4 w-4 text-green-500" />
-                      <span>Retweets</span>
+                      <Repeat className="h-4 w-4 text-green-600" />
+                      <span className="text-zinc-900">Retweets</span>
                     </div>
-                    <span className="font-medium">{totalRetweets.toLocaleString()}</span>
+                    <span className="font-medium text-zinc-900">{totalRetweets.toLocaleString()}</span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-green-500"
+                      className="h-full bg-green-600"
                       style={{ width: `${(totalRetweets / totalEngagement) * 100}%` }}
                     />
                   </div>
@@ -252,14 +252,14 @@ export default async function CreatorAnalyticsPage({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
-                      <MessageCircle className="h-4 w-4 text-blue-500" />
-                      <span>Replies</span>
+                      <MessageCircle className="h-4 w-4 text-blue-600" />
+                      <span className="text-zinc-900">Replies</span>
                     </div>
-                    <span className="font-medium">{totalReplies.toLocaleString()}</span>
+                    <span className="font-medium text-zinc-900">{totalReplies.toLocaleString()}</span>
                   </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-2 bg-zinc-100 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-blue-500"
+                      className="h-full bg-blue-600"
                       style={{ width: `${(totalReplies / totalEngagement) * 100}%` }}
                     />
                   </div>
@@ -268,31 +268,31 @@ export default async function CreatorAnalyticsPage({
             </Card>
 
             {/* Performance Metrics */}
-            <Card>
+            <Card className="hover:shadow-md transition-shadow">
               <CardHeader>
-                <CardTitle>Performance Metrics</CardTitle>
-                <CardDescription>Key performance indicators</CardDescription>
+                <CardTitle className="text-lg">Performance Metrics</CardTitle>
+                <CardDescription className="text-xs">Key performance indicators</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50">
                   <span className="text-sm text-muted-foreground">Engagement Rate</span>
-                  <span className="text-2xl font-bold">{engagementRate.toFixed(2)}%</span>
+                  <span className="text-2xl font-bold text-zinc-900">{engagementRate.toFixed(2)}%</span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50">
                   <span className="text-sm text-muted-foreground">Avg Engagement/Post</span>
-                  <span className="text-2xl font-bold">
+                  <span className="text-2xl font-bold text-zinc-900">
                     {Math.round(totalEngagement / (approvedPosts.length || 1)).toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50">
                   <span className="text-sm text-muted-foreground">Avg Impressions/Post</span>
-                  <span className="text-2xl font-bold">
+                  <span className="text-2xl font-bold text-zinc-900">
                     {Math.round(totalImpressions / (approvedPosts.length || 1)).toLocaleString()}
                   </span>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between p-3 rounded-lg bg-zinc-50">
                   <span className="text-sm text-muted-foreground">Total Posts</span>
-                  <span className="text-2xl font-bold">{approvedPosts.length}</span>
+                  <span className="text-2xl font-bold text-zinc-900">{approvedPosts.length}</span>
                 </div>
               </CardContent>
             </Card>
@@ -301,13 +301,13 @@ export default async function CreatorAnalyticsPage({
       </Tabs>
 
       {/* Top Posts */}
-      <Card>
+      <Card className="hover:shadow-md transition-shadow">
         <CardHeader>
-          <CardTitle>Top Performing Posts</CardTitle>
-          <CardDescription>Your best content in the selected period</CardDescription>
+          <CardTitle className="text-lg">Top Performing Posts</CardTitle>
+          <CardDescription className="text-xs">Your best content in the selected period</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3">
             {approvedPosts
               .sort((a, b) => {
                 const aTyped = a as { latestMetrics?: { likes?: number; retweets?: number; replies?: number } };
@@ -318,42 +318,42 @@ export default async function CreatorAnalyticsPage({
               })
               .slice(0, 5)
               .map((post, index) => {
-                const postTyped = post as { 
-                  _id?: { toString(): string }; 
+                const postTyped = post as {
+                  _id?: { toString(): string };
                   postUrl?: string;
-                  latestMetrics?: { 
-                    likes?: number; 
-                    retweets?: number; 
+                  latestMetrics?: {
+                    likes?: number;
+                    retweets?: number;
                     replies?: number;
                   };
                 };
                 const engagement = (postTyped.latestMetrics?.likes || 0) + (postTyped.latestMetrics?.retweets || 0) + (postTyped.latestMetrics?.replies || 0);
                 return (
-                  <div key={String(postTyped._id?.toString())} className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold">
+                  <div key={String(postTyped._id?.toString())} className="flex items-center justify-between p-4 border border-zinc-200 rounded-lg bg-zinc-50 hover:bg-zinc-100 transition-colors">
+                    <div className="flex items-center gap-4 flex-1 min-w-0">
+                      <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-900 text-white font-bold text-sm flex-shrink-0">
                         {index + 1}
                       </div>
-                      <div>
-                        <p className="text-sm font-medium line-clamp-1">{postTyped.postUrl || 'Post'}</p>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium line-clamp-1 text-zinc-900">{postTyped.postUrl || 'Post'}</p>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
                           <span className="flex items-center gap-1">
-                            <Heart className="h-3 w-3" />
-                            {postTyped.latestMetrics?.likes?.toLocaleString() || 0}
+                            <Heart className="h-3 w-3 text-red-600" />
+                            <span className="font-medium text-zinc-900">{postTyped.latestMetrics?.likes?.toLocaleString() || 0}</span>
                           </span>
                           <span className="flex items-center gap-1">
-                            <Repeat className="h-3 w-3" />
-                            {postTyped.latestMetrics?.retweets?.toLocaleString() || 0}
+                            <Repeat className="h-3 w-3 text-green-600" />
+                            <span className="font-medium text-zinc-900">{postTyped.latestMetrics?.retweets?.toLocaleString() || 0}</span>
                           </span>
                           <span className="flex items-center gap-1">
-                            <MessageCircle className="h-3 w-3" />
-                            {postTyped.latestMetrics?.replies?.toLocaleString() || 0}
+                            <MessageCircle className="h-3 w-3 text-blue-600" />
+                            <span className="font-medium text-zinc-900">{postTyped.latestMetrics?.replies?.toLocaleString() || 0}</span>
                           </span>
                         </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold">{engagement.toLocaleString()}</p>
+                    <div className="text-right flex-shrink-0 ml-4">
+                      <p className="text-lg font-bold text-zinc-900">{engagement.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">Total Engagement</p>
                     </div>
                   </div>

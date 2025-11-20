@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { healthCheck, getConnectionStatus } from '@/lib/db/mongodb';
 import { createLogger } from '@/lib/utils/logger';
 
@@ -8,7 +8,7 @@ const logger = createLogger('health-check');
  * Database health check endpoint
  * GET /api/health/database
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const health = await healthCheck();
     

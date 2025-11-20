@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, useTransition } from 'react';
+import { useCallback, useEffect, useTransition } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CreatorCard } from './CreatorCard';
 import { Input } from '@/components/ui/input';
@@ -51,7 +51,6 @@ export function CreatorList({
   onStatusChange,
   onProjectChange,
   onViewChange,
-  onRefresh,
 }: CreatorListProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -169,12 +168,12 @@ export function CreatorList({
 
       {/* Creators Grid/List */}
       {creators.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <div className="rounded-full bg-muted p-4">
-            <SlidersHorizontal className="h-8 w-8 text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-zinc-200 py-12 text-center bg-zinc-50/50">
+          <div className="mx-auto w-12 h-12 rounded-full bg-zinc-100 flex items-center justify-center mb-3">
+            <SlidersHorizontal className="h-6 w-6 text-zinc-400" />
           </div>
-          <h3 className="mt-4 text-lg font-semibold">No creators found</h3>
-          <p className="mt-2 text-sm text-muted-foreground">
+          <p className="text-sm font-medium text-zinc-900 mb-1">No creators found</p>
+          <p className="text-xs text-muted-foreground">
             {search
               ? 'Try adjusting your search or filters'
               : 'Get started by inviting your first creator'}

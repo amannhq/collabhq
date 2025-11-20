@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { BarChart3, Users, FileCheck, TrendingUp, Shield, Zap } from 'lucide-react'
 
@@ -22,7 +23,7 @@ export function Features() {
                                     </div>
                                     <p className="font-semibold text-zinc-900 text-base">Real-Time Analytics</p>
                                 </div>
-                                <p className="text-zinc-600 mt-2 max-w-sm text-sm leading-relaxed">Track engagement, reach, and ROI across all creators and campaigns. Get instant insights into what's working and what's not.</p>
+                                <p className="text-zinc-600 mt-2 max-w-sm text-sm leading-relaxed">Track engagement, reach, and ROI across all creators and campaigns. Get instant insights into what&apos;s working and what&apos;s not.</p>
                             </div>
                         </CardHeader>
 
@@ -30,7 +31,7 @@ export function Features() {
                             <div className="absolute -inset-6 [background:radial-gradient(75%_95%_at_50%_0%,transparent,#f3f1ea_100%)]"></div>
 
                             <div className="bg-[#f3f1ea] overflow-hidden rounded-tl-lg border-l border-zinc-200 border-t pl-2 pt-2">
-                                <img
+                                <Image
                                     src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1400&h=900&fit=crop&q=80"
                                     className="rounded-tl-lg w-full"
                                     alt="Analytics dashboard showing metrics and charts"
@@ -48,7 +49,7 @@ export function Features() {
                             <div className="relative mb-4 sm:mb-0">
                                 <div className="absolute -inset-6 [background:radial-gradient(50%_75%_at_75%_50%,transparent,#ffffff_100%)]"></div>
                                 <div className="aspect-4/3 overflow-hidden rounded-r-lg border border-zinc-200">
-                                    <img
+                                    <Image
                                         src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=1200&h=900&fit=crop&q=80"
                                         className="w-full h-full object-cover"
                                         alt="Team collaboration and content review"

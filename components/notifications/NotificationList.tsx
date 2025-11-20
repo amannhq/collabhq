@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CheckCheck, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,23 +13,20 @@ import { NotificationStatus } from '@/types';
 interface NotificationListProps {
   onNotificationRead?: () => void;
   onMarkAllRead?: () => void;
+  realtimeRefreshToken?: string;
 }
 
 export function NotificationList({
   onNotificationRead,
   onMarkAllRead,
+  realtimeRefreshToken,
 }: NotificationListProps) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'all' | 'unread'>('all');
   const [markingAllRead, setMarkingAllRead] = useState(false);
 
-  useEffect(() => {
-    fetchNotifications();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
-
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -47,7 +44,17 @@ export function NotificationList({
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeTab]);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
+
+  useEffect(() => {
+    if (realtimeRefreshToken) {
+      fetchNotifications();
+    }
+  }, [fetchNotifications, realtimeRefreshToken]);
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {

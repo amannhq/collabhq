@@ -26,7 +26,7 @@ export async function GET(
     
     // Try to get from cache first (2 minute cache)
     const cacheKey = CacheKeys.orgStats(orgId);
-    const cachedData = cache.get<any>(cacheKey);
+    const cachedData = cache.get<unknown>(cacheKey);
     
     if (cachedData) {
       logger.info({ orgId, cached: true }, 'Organization stats served from cache');
@@ -63,16 +63,22 @@ export async function GET(
       );
     }
 
-    // Calculate growth data for charts (last 7 days)
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Calculate growth data for charts (last 30 days for better insights)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    thirtyDaysAgo.setHours(0, 0, 0, 0); // Start of day
+
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // End of day
 
     // OPTIMIZED: Use aggregation pipeline for engagement metrics (much faster)
+    // Filter by last 30 days to match chart data
     const engagementMetrics = await Post.aggregate([
       {
         $match: {
           organizationId: organization._id,
           status: 'approved',
+          postedAt: { $gte: thirtyDaysAgo, $lte: today }, // Last 30 days inclusive
         },
       },
       {
@@ -84,6 +90,7 @@ export async function GET(
                 { $ifNull: ['$latestMetrics.likes', 0] },
                 { $ifNull: ['$latestMetrics.retweets', 0] },
                 { $ifNull: ['$latestMetrics.replies', 0] },
+                { $ifNull: ['$latestMetrics.quotes', 0] },
               ],
             },
           },
@@ -108,6 +115,7 @@ export async function GET(
       pendingPosts,
       recentPosts,
       chartData,
+      topCreators,
     ] = await Promise.all([
       Project.countDocuments({ organizationId: orgId }),
       Project.countDocuments({ organizationId: orgId, status: 'active' }),
@@ -127,25 +135,100 @@ export async function GET(
         .populate('creatorId', 'name email')
         .populate('projectId', 'name')
         .lean(),
+      // Use Post collection with latestMetrics for real-time chart data
       Post.aggregate([
         {
           $match: {
             organizationId: organization._id,
             status: 'approved',
-            createdAt: { $gte: sevenDaysAgo },
+            postedAt: { $gte: thirtyDaysAgo, $lte: today },
           },
         },
         {
           $group: {
-            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
-            count: { $sum: 1 },
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$postedAt' } },
             likes: { $sum: { $ifNull: ['$latestMetrics.likes', 0] } },
             retweets: { $sum: { $ifNull: ['$latestMetrics.retweets', 0] } },
             replies: { $sum: { $ifNull: ['$latestMetrics.replies', 0] } },
             impressions: { $sum: { $ifNull: ['$latestMetrics.impressions', 0] } },
+            postCount: { $addToSet: '$_id' },
+          },
+        },
+        {
+          $project: {
+            _id: 1,
+            likes: 1,
+            retweets: 1,
+            replies: 1,
+            impressions: 1,
+            totalEngagement: {
+              $add: ['$likes', '$retweets', '$replies']
+            },
+            count: { $size: '$postCount' },
           },
         },
         { $sort: { _id: 1 } },
+      ]),
+      // Top 10 creators by engagement (from posts with latest metrics)
+      Post.aggregate([
+        {
+          $match: {
+            organizationId: organization._id,
+            status: 'approved',
+            postedAt: { $gte: thirtyDaysAgo, $lte: today }, // Last 30 days inclusive
+          },
+        },
+        {
+          $group: {
+            _id: '$creatorId',
+            postCount: { $sum: 1 },
+            totalEngagement: {
+              $sum: {
+                $add: [
+                  { $ifNull: ['$latestMetrics.likes', 0] },
+                  { $ifNull: ['$latestMetrics.retweets', 0] },
+                  { $ifNull: ['$latestMetrics.replies', 0] },
+                  { $ifNull: ['$latestMetrics.quotes', 0] },
+                ],
+              },
+            },
+            totalImpressions: {
+              $sum: { $ifNull: ['$latestMetrics.impressions', 0] },
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: 'users',
+            localField: '_id',
+            foreignField: '_id',
+            as: 'creator',
+          },
+        },
+        { $unwind: '$creator' },
+        {
+          $project: {
+            creatorName: '$creator.name',
+            creatorHandle: '$creator.creatorProfile.twitterHandle',
+            postCount: 1,
+            totalEngagement: 1,
+            totalImpressions: 1,
+            avgEngagementRate: {
+              $cond: {
+                if: { $gt: ['$totalImpressions', 0] },
+                then: {
+                  $multiply: [
+                    { $divide: ['$totalEngagement', '$totalImpressions'] },
+                    100,
+                  ],
+                },
+                else: 0,
+              },
+            },
+          },
+        },
+        { $sort: { totalEngagement: -1 } },
+        { $limit: 10 },
       ]),
     ]);
 
@@ -165,6 +248,7 @@ export async function GET(
       stats,
       recentPosts,
       chartData,
+      topCreators,
     };
 
     // Cache for 2 minutes

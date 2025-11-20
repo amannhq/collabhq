@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,48 +10,40 @@ import {
 } from '@/components/ui/popover';
 import { NotificationList } from './NotificationList';
 import { Badge } from '@/components/ui/badge';
+import { RealtimeIndicator } from '@/components/shared';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 interface NotificationBellProps {
-  userId: string;
+  userId?: string;
+  organizationId?: string;
 }
 
-export function NotificationBell({ userId }: NotificationBellProps) {
-  const [unreadCount, setUnreadCount] = useState(0);
+export function NotificationBell({ userId, organizationId }: NotificationBellProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const {
+    unreadCount,
+    status,
+    lastNotification,
+    refreshUnreadCount,
+    decrementUnread,
+    resetUnread,
+  } = useRealtimeNotifications({
+    organizationId,
+    enabled: Boolean(userId),
+  });
 
-  useEffect(() => {
-    const fetchUnreadCount = async () => {
-      try {
-        const response = await fetch(`/api/notifications?status=unread&count=true`);
-        if (response.ok) {
-          const { data } = await response.json();
-          setUnreadCount(data.count || 0);
-        }
-      } catch (error) {
-        console.error('Failed to fetch unread count:', error);
+  const handleOpenChange = useCallback(
+    (nextOpen: boolean) => {
+      setIsOpen(nextOpen);
+      if (nextOpen) {
+        refreshUnreadCount();
       }
-    };
-
-    // Fetch initial unread count
-    fetchUnreadCount();
-
-    // Poll for updates every 30 seconds
-    const interval = setInterval(fetchUnreadCount, 30000);
-
-    return () => clearInterval(interval);
-  }, [userId]);
-
-  const handleNotificationRead = () => {
-    // Decrease count when notification is marked as read
-    setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleMarkAllRead = () => {
-    setUnreadCount(0);
-  };
+    },
+    [refreshUnreadCount]
+  );
 
   return (
-    <Popover open={isOpen} onOpenChange={setIsOpen}>
+    <Popover open={isOpen} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="outline" size="icon" className="relative" aria-label="Notifications">
           <Bell className="h-5 w-5" />
@@ -68,9 +60,13 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end" aria-label="Notification Center">
         <NotificationList
-          onNotificationRead={handleNotificationRead}
-          onMarkAllRead={handleMarkAllRead}
+          realtimeRefreshToken={lastNotification?.id}
+          onNotificationRead={() => decrementUnread()}
+          onMarkAllRead={resetUnread}
         />
+        <div className="border-t bg-[#f3f1ea] px-4 py-2">
+          <RealtimeIndicator status={status} compact className="ml-auto" />
+        </div>
       </PopoverContent>
     </Popover>
   );

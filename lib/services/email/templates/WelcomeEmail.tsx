@@ -16,7 +16,6 @@ interface WelcomeEmailProps {
 }
 
 export function WelcomeEmail({
-  name,
   email,
   organizationName,
   projectName,

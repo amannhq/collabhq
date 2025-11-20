@@ -18,9 +18,11 @@ interface PasswordChangeModalProps {
 
 export function PasswordChangeModal({ isOpen, requirePasswordChange }: PasswordChangeModalProps) {
   const router = useRouter();
-  const [open, setOpen] = useState(isOpen && requirePasswordChange);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    // Sync modal state with props
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(isOpen && requirePasswordChange);
   }, [isOpen, requirePasswordChange]);
 
