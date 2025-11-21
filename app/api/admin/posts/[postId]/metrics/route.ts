@@ -44,8 +44,8 @@ export async function PUT(
 
     await connectDB();
 
-    // Find the post
-    const post = await Post.findById(postId);
+    // Find the post and populate project to get organizationId
+    const post = await Post.findById(postId).populate('projectId');
 
     if (!post) {
       return NextResponse.json(
@@ -92,10 +92,13 @@ export async function PUT(
     await Metrics.create({
       postId: post._id,
       creatorId: post.creatorId,
+      projectId: post.projectId._id,
+      organizationId: post.projectId.organizationId,
+      submittedBy: session.user.id,
+      source: 'admin',
       metrics: newMetrics,
       growth,
       recordedAt: new Date(),
-      recordedBy: session.user.id,
     });
 
     return NextResponse.json({
