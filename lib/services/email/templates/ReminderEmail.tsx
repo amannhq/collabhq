@@ -1,114 +1,260 @@
-import { BaseEmailTemplate } from './BaseEmailTemplate';
+import * as React from 'react';
+import { Html, Head, Body, Container, Text, Link, Heading } from '@react-email/components';
 
-interface ReminderEmailProps {
+interface ReminderEmailNewProps {
   name: string;
   organizationName: string;
   dashboardUrl: string;
-  posts: Array<{
-    projectName?: string;
-    postUrl: string;
-    lastMetricsUpdate?: Date | string;
-  }>;
-  branding?: {
-    primaryColor?: string;
-    secondaryColor?: string;
-    logoUrl?: string;
-    fontFamily?: string;
-  };
+  pendingPostsCount: number;
 }
 
-const formatDate = (value?: Date | string) => {
-  if (!value) {
-    return 'recently';
-  }
-
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return 'recently';
-  }
-
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-  });
-};
-
-export const ReminderEmail = ({
+export function ReminderEmail({
   name,
   organizationName,
   dashboardUrl,
-  posts,
-  branding,
-}: ReminderEmailProps) => {
-  const pendingCount = posts.length;
-  const postsListMarkup = pendingCount
-    ? `<ul style="list-style: none; padding: 0; margin: 24px 0;">
-        ${posts
-          .map(
-            (post) => `
-          <li style="
-            margin-bottom: 16px;
-            padding: 16px;
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            background: #f9fafb;
-          ">
-            <p style="margin: 0; font-weight: 600; color: #111827;">
-              ${post.projectName || 'Project update'}
-            </p>
-            <p style="margin: 4px 0 8px 0; color: #6b7280; font-size: 14px;">
-              Last metrics update ${formatDate(post.lastMetricsUpdate)}
-            </p>
-            <a 
-              href="${post.postUrl}" 
-              style="color: #111827; text-decoration: underline; font-size: 14px; word-break: break-all;"
-            >
-              View post
-            </a>
-          </li>`
-          )
-          .join('')}
-      </ul>`
-    : `<p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #374151;">
-        You have recent activity that needs updated metrics.
-      </p>`;
-
-  const bodyContent = `
-    <p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #374151;">
-      Hi ${name},
-    </p>
-    <p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #374151;">
-      This is a friendly reminder from <strong>${organizationName}</strong> to refresh your post metrics.
-      Keeping things up-to-date helps the team stay on top of performance.
-    </p>
-    <p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #374151;">
-      ${
-        pendingCount > 1
-          ? `You currently have <strong>${pendingCount}</strong> posts waiting for an update:`
-          : 'Here is the post that needs the latest metrics:'
-      }
-    </p>
-    ${postsListMarkup}
-    <p style="font-size: 16px; line-height: 26px; margin: 16px 0; color: #374151;">
-      Click the button below to jump back into your dashboard and submit the latest numbers.
-    </p>
-  `;
-
+  pendingPostsCount,
+}: ReminderEmailNewProps) {
   return (
-    <BaseEmailTemplate
-      branding={branding}
-      content={{
-        heading: 'Time to refresh your metrics ⏱️',
-        body: bodyContent,
-        ctaText: 'Update Metrics',
-        ctaUrl: dashboardUrl,
-        footerText:
-          'You are receiving this reminder because metrics notifications are enabled for your account.',
-      }}
-      previewText="Quick reminder to update your metrics"
-    />
+    <Html lang="en">
+      <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <title>Metrics Reminder</title>
+        <style dangerouslySetInnerHTML={{ __html: emailStyles }} />
+      </Head>
+      <Body style={bodyStyle}>
+        <Container style={containerStyle}>
+          {/* Header */}
+          <div style={headerStyle}>
+            <Heading style={headerH1Style}>Friendly Reminder</Heading>
+          </div>
+
+          {/* Content */}
+          <div style={contentStyle}>
+            <Text style={paragraphStyle}>
+              Hi <strong style={strongStyle}>{name}</strong>,
+            </Text>
+
+            <Text style={paragraphStyle}>
+              You have posts that need metrics updates for <strong style={strongStyle}>{organizationName}</strong>.
+            </Text>
+
+            {/* Highlight Box */}
+            <div style={highlightBoxStyle}>
+              <div style={highlightNumberStyle}>{pendingPostsCount}</div>
+              <Text style={highlightLabelStyle}>post(s) pending update</Text>
+            </div>
+
+            <Text style={paragraphStyle}>
+              Keeping your metrics up to date helps the team track performance and make data-driven decisions.
+            </Text>
+
+            {/* CTA Button */}
+            <div style={buttonContainerStyle}>
+              <Link href={dashboardUrl} style={buttonStyle}>
+                Update Metrics
+              </Link>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div style={footerStyle}>
+            <Text style={footerTextStyle}>
+              You&apos;re receiving this reminder because you have pending metric updates.
+            </Text>
+          </div>
+        </Container>
+      </Body>
+    </Html>
   );
+}
+
+const emailStyles = `
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  @media only screen and (max-width: 600px) {
+    .email-header {
+      padding: 32px 20px !important;
+    }
+    .email-header h1 {
+      font-size: 22px !important;
+      line-height: 1.3 !important;
+    }
+    .email-content {
+      padding: 28px 20px 32px !important;
+    }
+    .email-content p {
+      font-size: 15px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 16px 0 !important;
+    }
+    .highlight-box {
+      padding: 24px 16px !important;
+      margin: 24px 0 !important;
+    }
+    .highlight-number {
+      font-size: 38px !important;
+    }
+    .highlight-label {
+      font-size: 13px !important;
+    }
+    .btn {
+      padding: 13px 24px !important;
+      font-size: 15px !important;
+      width: 100% !important;
+      display: block !important;
+    }
+    .button-container {
+      margin: 24px 0 16px 0 !important;
+    }
+    .email-footer {
+      padding: 24px 20px !important;
+    }
+    .email-footer p {
+      font-size: 12px !important;
+    }
+  }
+
+  @media only screen and (max-width: 480px) {
+    .email-header {
+      padding: 28px 16px !important;
+    }
+    .email-header h1 {
+      font-size: 20px !important;
+      line-height: 1.3 !important;
+    }
+    .email-content {
+      padding: 24px 16px 28px !important;
+    }
+    .email-content p {
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 14px 0 !important;
+    }
+    .highlight-box {
+      padding: 20px 12px !important;
+      margin: 20px 0 !important;
+    }
+    .highlight-number {
+      font-size: 36px !important;
+    }
+    .highlight-label {
+      font-size: 12px !important;
+    }
+    .btn {
+      padding: 12px 20px !important;
+      font-size: 14px !important;
+    }
+    .button-container {
+      margin: 20px 0 14px 0 !important;
+    }
+    .email-footer {
+      padding: 20px 16px !important;
+    }
+    .email-footer p {
+      font-size: 11px !important;
+    }
+  }
+`;
+
+const bodyStyle: React.CSSProperties = {
+  fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  backgroundColor: '#f3f1ea',
+  padding: '40px 20px',
+  margin: 0,
+  lineHeight: '1.6',
 };
 
-export default ReminderEmail;
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
+  margin: '0 auto',
+  maxWidth: '600px',
+  overflow: 'hidden',
+};
 
+const headerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
+  padding: '48px 40px',
+  textAlign: 'center',
+};
+
+const headerH1Style: React.CSSProperties = {
+  fontSize: '28px',
+  fontWeight: 600,
+  margin: 0,
+  letterSpacing: '-0.02em',
+  color: '#18181b',
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '40px 40px 48px',
+  backgroundColor: '#f3f1ea',
+};
+
+const paragraphStyle: React.CSSProperties = {
+  fontSize: '16px',
+  lineHeight: '1.6',
+  color: '#333333',
+  margin: '0 0 20px 0',
+};
+
+const strongStyle: React.CSSProperties = {
+  color: '#18181b',
+  fontWeight: 600,
+};
+
+const highlightBoxStyle: React.CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  padding: '32px 24px',
+  margin: '32px 0',
+  textAlign: 'center',
+};
+
+const highlightNumberStyle: React.CSSProperties = {
+  fontSize: '48px',
+  fontWeight: 600,
+  color: '#18181b',
+  margin: '0 0 8px 0',
+  letterSpacing: '-0.02em',
+};
+
+const highlightLabelStyle: React.CSSProperties = {
+  fontSize: '14px',
+  color: '#666666',
+  margin: 0,
+};
+
+const buttonContainerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  margin: '28px 0 20px 0',
+};
+
+const buttonStyle: React.CSSProperties = {
+  backgroundColor: '#18181b',
+  color: '#f3f1ea',
+  fontSize: '15px',
+  fontWeight: 500,
+  textDecoration: 'none',
+  padding: '14px 36px',
+  display: 'inline-block',
+  letterSpacing: 0,
+};
+
+const footerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
+  padding: '32px 40px',
+  textAlign: 'center',
+  borderTop: '1px solid rgba(24, 24, 27, 0.1)',
+};
+
+const footerTextStyle: React.CSSProperties = {
+  color: '#888888',
+  fontSize: '13px',
+  margin: 0,
+  lineHeight: '1.5',
+};

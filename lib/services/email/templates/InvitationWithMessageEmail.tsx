@@ -1,19 +1,21 @@
 import * as React from 'react';
 import { Html, Head, Body, Container, Text, Link, Heading } from '@react-email/components';
 
-interface InvitationEmailNewProps {
+interface InvitationWithMessageEmailNewProps {
   name: string;
   organizationName: string;
   projectName: string;
   inviteUrl: string;
+  message: string;
 }
 
-export function InvitationEmail({
+export function InvitationWithMessageEmail({
   name,
   organizationName,
   projectName,
   inviteUrl,
-}: InvitationEmailNewProps) {
+  message,
+}: InvitationWithMessageEmailNewProps) {
   return (
     <Html lang="en">
       <Head>
@@ -40,6 +42,12 @@ export function InvitationEmail({
               <strong style={strongStyle}>{organizationName}</strong> has invited you to join their team as a content creator
               for the <strong style={strongStyle}>{projectName}</strong> project.
             </Text>
+
+            {/* Message Box */}
+            <div style={messageBoxStyle}>
+              <Text style={messageBoxLabelStyle}>Message from the team:</Text>
+              <Text style={messageBoxTextStyle}>{message}</Text>
+            </div>
 
             <Text style={paragraphStyle}>
               Click the button below to accept your invitation and set up your account.
@@ -86,6 +94,17 @@ const emailStyles = `
       line-height: 1.5 !important;
       margin: 0 0 16px 0 !important;
     }
+    .message-box {
+      padding: 16px !important;
+      margin: 20px 0 !important;
+    }
+    .message-box-label {
+      font-size: 12px !important;
+      margin-bottom: 6px !important;
+    }
+    .message-box-text {
+      font-size: 14px !important;
+    }
     .btn {
       padding: 13px 24px !important;
       font-size: 15px !important;
@@ -112,6 +131,17 @@ const emailStyles = `
       font-size: 14px !important;
       line-height: 1.5 !important;
       margin: 0 0 14px 0 !important;
+    }
+    .message-box {
+      padding: 14px !important;
+      margin: 16px 0 !important;
+    }
+    .message-box-label {
+      font-size: 11px !important;
+      margin-bottom: 5px !important;
+    }
+    .message-box-text {
+      font-size: 13px !important;
     }
     .btn {
       padding: 12px 20px !important;
@@ -173,6 +203,29 @@ const paragraphStyle: React.CSSProperties = {
 const strongStyle: React.CSSProperties = {
   color: '#18181b',
   fontWeight: 600,
+};
+
+const messageBoxStyle: React.CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  padding: '20px',
+  margin: '28px 0',
+  borderLeft: '3px solid #18181b',
+};
+
+const messageBoxLabelStyle: React.CSSProperties = {
+  fontWeight: 600,
+  fontSize: '14px',
+  margin: '0 0 8px 0',
+  color: '#18181b',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+};
+
+const messageBoxTextStyle: React.CSSProperties = {
+  margin: 0,
+  color: '#555555',
+  fontSize: '15px',
+  lineHeight: '1.5',
 };
 
 const buttonContainerStyle: React.CSSProperties = {

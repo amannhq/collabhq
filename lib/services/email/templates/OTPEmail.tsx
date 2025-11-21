@@ -1,188 +1,282 @@
 import * as React from 'react';
-import {
-  Html,
-  Head,
-  Body,
-  Container,
-  Section,
-  Text,
-  Hr,
-} from '@react-email/components';
+import { Html, Head, Body, Container, Text, Heading, Hr } from '@react-email/components';
 
-interface OTPEmailProps {
+interface OTPEmailNewProps {
   otp: string;
-  type: 'email-verification' | 'sign-in' | 'forget-password';
+  title: string;
+  description: string;
 }
 
-const titles = {
-  'email-verification': 'Verify Your Email',
-  'sign-in': 'Sign In to Your Account',
-  'forget-password': 'Reset Your Password',
-};
-
-const descriptions = {
-  'email-verification': 'Thank you for signing up! Use the verification code below to complete your registration and start managing your creator partnerships.',
-  'sign-in': 'Use the code below to securely sign in to your account. This code will expire in 5 minutes.',
-  'forget-password': 'You requested to reset your password. Use the code below to create a new password for your account.',
-};
-
-export const OTPEmail = ({ otp, type }: OTPEmailProps) => {
+export function OTPEmail({
+  otp,
+  title,
+  description,
+}: OTPEmailNewProps) {
   return (
-    <Html>
-      <Head />
-      <Body style={main}>
-        <Container style={container}>
-          {/* Logo */}
-          <Section style={logoSection}>
-            <Text style={logoText}>Collab</Text>
-          </Section>
+    <Html lang="en">
+      <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <title>Verification Code</title>
+        <style dangerouslySetInnerHTML={{ __html: emailStyles }} />
+      </Head>
+      <Body style={bodyStyle}>
+        <Container style={containerStyle}>
+          {/* Logo Section */}
+          <div style={logoSectionStyle}>
+            <div style={logoTextStyle}>Collab</div>
+          </div>
 
-          {/* Main Content */}
-          <Section style={content}>
-            <Text style={title}>{titles[type]}</Text>
-            <Text style={description}>{descriptions[type]}</Text>
+          {/* Content */}
+          <div style={contentStyle}>
+            <Heading as="h1" style={titleStyle}>{title}</Heading>
+
+            <Text style={descriptionStyle}>{description}</Text>
 
             {/* OTP Box */}
-            <Section style={otpBox}>
-              <Text style={otpText}>{otp}</Text>
-            </Section>
+            <div style={otpBoxStyle}>
+              <div style={otpTextStyle}>{otp}</div>
+            </div>
 
-            <Text style={expiry}>This code will expire in 5 minutes.</Text>
+            <Text style={textMutedStyle}>
+              This code will expire in 5 minutes.
+            </Text>
 
-            {/* Security Notice */}
-            <Section style={securityBox}>
-              <Text style={securityText}>
-                🔒 For your security, never share this code with anyone.
-              </Text>
-            </Section>
-          </Section>
+            {/* Security Box */}
+            <div style={securityBoxStyle}>
+              <Text style={securityBoxTextStyle}>🔒 For your security, never share this code with anyone.</Text>
+            </div>
+          </div>
+
+          {/* Divider */}
+          <Hr style={dividerStyle} />
 
           {/* Footer */}
-          <Hr style={divider} />
-          <Section style={footer}>
-            <Text style={footerText}>
-              © 2024 Collab. Built for creator-first teams.
+          <div style={footerStyle}>
+            <Text style={footerTextPrimaryStyle}>
+              © 2025 Collab. Built for creator first teams.
             </Text>
-            <Text style={footerLink}>
+            <Text style={footerTextSecondaryStyle}>
               If you didn&apos;t request this code, please ignore this email.
             </Text>
-          </Section>
+          </div>
         </Container>
       </Body>
     </Html>
   );
-};
+}
 
-export default OTPEmail;
+const emailStyles = `
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
 
-// Styles matching the main page design
-const main = {
+  @media only screen and (max-width: 600px) {
+    .logo-section {
+      padding: 24px 20px !important;
+    }
+    .logo-text {
+      font-size: 20px !important;
+    }
+    .email-content {
+      padding: 28px 20px 32px !important;
+    }
+    .email-content p {
+      font-size: 15px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 16px 0 !important;
+    }
+    .otp-box {
+      padding: 28px 16px !important;
+      margin: 24px 0 !important;
+    }
+    .otp-text {
+      font-size: 34px !important;
+      letter-spacing: 0.16em !important;
+    }
+    .security-box {
+      padding: 14px 16px !important;
+      margin-top: 20px !important;
+    }
+    .security-box p {
+      font-size: 12px !important;
+      line-height: 1.5 !important;
+    }
+    .title {
+      font-size: 22px !important;
+      margin-bottom: 12px !important;
+    }
+    .description {
+      font-size: 14px !important;
+    }
+    .text-muted {
+      font-size: 12px !important;
+    }
+    .email-footer p {
+      font-size: 12px !important;
+    }
+  }
+
+  @media only screen and (max-width: 480px) {
+    .logo-section {
+      padding: 20px 16px !important;
+    }
+    .logo-text {
+      font-size: 18px !important;
+    }
+    .email-content {
+      padding: 24px 16px 28px !important;
+    }
+    .email-content p {
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 14px 0 !important;
+    }
+    .otp-box {
+      padding: 24px 12px !important;
+      margin: 20px 0 !important;
+    }
+    .otp-text {
+      font-size: 30px !important;
+      letter-spacing: 0.14em !important;
+    }
+    .security-box {
+      padding: 12px 14px !important;
+      margin-top: 16px !important;
+    }
+    .security-box p {
+      font-size: 11px !important;
+    }
+    .title {
+      font-size: 20px !important;
+      margin-bottom: 10px !important;
+    }
+    .description {
+      font-size: 13px !important;
+    }
+    .text-muted {
+      font-size: 11px !important;
+    }
+    .email-footer p {
+      font-size: 11px !important;
+    }
+  }
+`;
+
+const bodyStyle: React.CSSProperties = {
+  fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
   backgroundColor: '#f3f1ea',
-  fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-  padding: '40px 0',
+  padding: '40px 20px',
+  margin: 0,
+  lineHeight: '1.6',
 };
 
-const container = {
-  backgroundColor: '#ffffff',
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
   margin: '0 auto',
   maxWidth: '600px',
-  borderRadius: '16px',
   overflow: 'hidden',
-  boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05)',
 };
 
-const logoSection = {
+const logoSectionStyle: React.CSSProperties = {
   backgroundColor: '#f3f1ea',
   padding: '32px 40px',
-  textAlign: 'center' as const,
+  textAlign: 'center',
+  borderBottom: '1px solid #e5e5e5',
 };
 
-const logoText = {
+const logoTextStyle: React.CSSProperties = {
+  fontSize: '24px',
+  fontWeight: 600,
+  color: '#18181b',
+  margin: 0,
+  letterSpacing: '-0.02em',
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '40px 40px 48px',
+  backgroundColor: '#f3f1ea',
+};
+
+const titleStyle: React.CSSProperties = {
   fontSize: '28px',
-  fontWeight: '700',
-  color: '#000000',
-  margin: '0',
-  letterSpacing: '-0.5px',
-};
-
-const content = {
-  padding: '48px 40px',
-};
-
-const title = {
-  fontSize: '32px',
-  fontWeight: '600',
-  color: '#000000',
+  fontWeight: 600,
+  color: '#18181b',
   margin: '0 0 16px 0',
-  lineHeight: '1.2',
-  letterSpacing: '-0.5px',
+  lineHeight: '1.3',
+  letterSpacing: '-0.02em',
 };
 
-const description = {
-  fontSize: '16px',
+const descriptionStyle: React.CSSProperties = {
+  fontSize: '15px',
   lineHeight: '1.6',
-  color: 'rgba(0, 0, 0, 0.7)',
+  color: '#555555',
   margin: '0 0 32px 0',
 };
 
-const otpBox = {
-  backgroundColor: '#000000',
-  borderRadius: '12px',
-  padding: '32px',
-  textAlign: 'center' as const,
-  margin: '0 0 24px 0',
+const otpBoxStyle: React.CSSProperties = {
+  backgroundColor: '#18181b',
+  padding: '40px 32px',
+  textAlign: 'center',
+  margin: '32px 0',
 };
 
-const otpText = {
-  fontSize: '48px',
-  fontWeight: '700',
-  letterSpacing: '12px',
-  color: '#ffffff',
-  margin: '0',
-  fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
+const otpTextStyle: React.CSSProperties = {
+  fontSize: '42px',
+  fontWeight: 600,
+  letterSpacing: '0.2em',
+  color: '#f3f1ea',
+  margin: 0,
+  fontFamily: "'JetBrains Mono', 'SF Mono', Monaco, 'Courier New', monospace",
 };
 
-const expiry = {
-  fontSize: '14px',
-  color: 'rgba(0, 0, 0, 0.5)',
-  margin: '0 0 32px 0',
-  textAlign: 'center' as const,
+const textMutedStyle: React.CSSProperties = {
+  color: '#888888',
+  fontSize: '13px',
+  textAlign: 'center',
+  margin: '24px 0',
 };
 
-const securityBox = {
-  backgroundColor: '#f3f1ea',
-  border: '2px solid rgba(0, 0, 0, 0.1)',
-  borderRadius: '12px',
-  padding: '20px 24px',
-  margin: '0',
+const securityBoxStyle: React.CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  padding: '16px 20px',
+  marginTop: '24px',
 };
 
-const securityText = {
-  fontSize: '14px',
-  color: 'rgba(0, 0, 0, 0.8)',
-  margin: '0',
+const securityBoxTextStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#555555',
+  margin: 0,
   lineHeight: '1.5',
-  textAlign: 'center' as const,
+  textAlign: 'center',
 };
 
-const divider = {
-  borderColor: 'rgba(0, 0, 0, 0.1)',
-  margin: '0',
+const dividerStyle: React.CSSProperties = {
+  border: 'none',
+  borderTop: '1px solid #e5e5e5',
+  margin: 0,
 };
 
-const footer = {
+const footerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
   padding: '32px 40px',
-  textAlign: 'center' as const,
+  textAlign: 'center',
+  borderTop: '1px solid rgba(24, 24, 27, 0.1)',
 };
 
-const footerText = {
+const footerTextPrimaryStyle: React.CSSProperties = {
+  color: '#888888',
   fontSize: '13px',
-  color: 'rgba(0, 0, 0, 0.5)',
   margin: '0 0 8px 0',
+  lineHeight: '1.5',
 };
 
-const footerLink = {
-  fontSize: '13px',
+const footerTextSecondaryStyle: React.CSSProperties = {
   color: 'rgba(0, 0, 0, 0.4)',
-  margin: '0',
+  fontSize: '13px',
+  margin: 0,
+  lineHeight: '1.5',
 };
