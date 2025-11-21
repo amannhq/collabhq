@@ -149,8 +149,7 @@ export function withAuth(
   ) => Promise<NextResponse>
 ) {
   return async (
-    request: NextRequest,
-    _context?: { params?: Promise<Record<string, string>> }
+    request: NextRequest
   ): Promise<NextResponse> => {
     const authContext = await requireAuth(request);
     return handler(request, authContext);
@@ -182,8 +181,7 @@ export function withAdminAuth(
   ) => Promise<NextResponse>
 ) {
   return async (
-    request: NextRequest,
-    _context?: { params?: Promise<Record<string, string>> }
+    request: NextRequest
   ): Promise<NextResponse> => {
     const authContext = await requireAdmin(request);
     return handler(request, authContext);
@@ -220,8 +218,7 @@ export function withOrgAccess(
   ) => Promise<NextResponse>
 ) {
   return async (
-    request: NextRequest,
-    _context?: { params?: Promise<Record<string, string>> }
+    request: NextRequest
   ): Promise<NextResponse> => {
     const organizationId = getOrgId(request);
     const authContext = await requireOrgAccess(organizationId, request);
