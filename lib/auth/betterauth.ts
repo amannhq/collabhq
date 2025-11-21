@@ -13,6 +13,7 @@ import {
   userHasOrganization,
   getCompanyName,
 } from "./organization-helpers";
+import { isOrganizationEmail } from "@/lib/utils/email-validation";
 
 const logger = createLogger('better-auth');
 
@@ -79,6 +80,9 @@ export const auth = betterAuth({
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
             accessType: 'offline',
             prompt: 'select_account consent',
+            // Restrict to Google Workspace accounts only (hides personal Gmail accounts in the sign-in UI)
+            // This is a UX improvement - server-side validation is still required for security
+            hd: '*', // Wildcard shows only Google Workspace accounts, not personal Gmail
           },
         },
       }
@@ -199,6 +203,20 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
+          // Validate organizational email for ALL signups (both email/password and OAuth)
+          const validation = isOrganizationEmail(user.email);
+
+          if (!validation.isValid) {
+            logger.error(
+              { email: user.email, error: validation.error },
+              'Blocked signup attempt with personal email'
+            );
+            // Throw error to prevent user creation
+            throw new Error(
+              validation.error || 'Please use your organization email address'
+            );
+          }
+
           // Always set role to 'admin' for signups (organizations)
           return {
             data: {
@@ -253,16 +271,48 @@ export const auth = betterAuth({
     },
     account: {
       create: {
+        before: async (account) => {
+          // Additional validation for Google OAuth accounts
+          if (account.providerId === 'google') {
+            try {
+              await connectDB();
+              const User = (await import('@/lib/db/models/User')).default;
+
+              const user = await User.findById(account.userId)
+                .select('email')
+                .lean<IUser>();
+
+              if (user) {
+                // Validate that the email is organizational
+                const validation = isOrganizationEmail(user.email);
+                if (!validation.isValid) {
+                  logger.error(
+                    { email: user.email, accountId: account.id },
+                    'Blocked Google OAuth with personal email'
+                  );
+                  throw new Error(
+                    'Personal Gmail accounts are not allowed. Please use your organization email address.'
+                  );
+                }
+              }
+            } catch (error) {
+              logger.error({ error, accountId: account.id }, 'Error validating Google account');
+              throw error;
+            }
+          }
+
+          return true; // Allow account creation
+        },
         after: async (account) => {
           // When a social account is linked/created, ensure user has organization
           try {
             await connectDB();
             const User = (await import('@/lib/db/models/User')).default;
-            
+
             const user = await User.findById(account.userId)
               .select('email organizationId')
               .lean<IUser>();
-            
+
             if (!user) {
               logger.warn({ accountId: account.id }, 'User not found for account');
               return;

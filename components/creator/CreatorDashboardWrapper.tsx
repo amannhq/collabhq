@@ -26,9 +26,14 @@ export function CreatorDashboardWrapper({
   }
 
   return (
-    <>
-      {children}
+    <div className="relative">
+      {/* Dashboard Content */}
+      <div className={requirePasswordChange ? 'pointer-events-none blur-sm' : ''}>
+        {children}
+      </div>
+
+      {/* Password Change Modal - Always shown when requirePasswordChange is true */}
       <PasswordChangeModal isOpen={mounted} requirePasswordChange={requirePasswordChange} />
-    </>
+    </div>
   );
 }
