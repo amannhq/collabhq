@@ -42,6 +42,7 @@ export function PasswordChangeModal({ isOpen, requirePasswordChange }: PasswordC
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="sm:max-w-[500px]"
+        showCloseButton={!requirePasswordChange}
         onPointerDownOutside={(e) => {
           if (requirePasswordChange) {
             e.preventDefault();
@@ -52,12 +53,19 @@ export function PasswordChangeModal({ isOpen, requirePasswordChange }: PasswordC
             e.preventDefault();
           }
         }}
+        onInteractOutside={(e) => {
+          if (requirePasswordChange) {
+            e.preventDefault();
+          }
+        }}
       >
         <DialogHeader>
-          <DialogTitle>Set New Password</DialogTitle>
+          <DialogTitle>
+            {requirePasswordChange ? 'Change Temporary Password' : 'Set New Password'}
+          </DialogTitle>
           <DialogDescription>
             {requirePasswordChange
-              ? 'For security reasons, you must change your temporary password before continuing.'
+              ? 'For security reasons, you must change your temporary password before continuing. This dialog cannot be closed until you set a new password.'
               : 'Update your password to keep your account secure.'}
           </DialogDescription>
         </DialogHeader>
