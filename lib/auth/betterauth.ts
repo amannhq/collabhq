@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/services/email/email-service";
 import { OTPEmail } from "@/lib/services/email/templates/OTPEmail";
 import connectDB from "@/lib/db/mongodb";
 import type { IUser } from "@/lib/db/models/User";
+import { isOrganizationEmail } from "@/lib/utils/email-validation";
 import {
   createOrganizationForUser,
   userHasOrganization,
@@ -217,10 +218,28 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // Always set role to 'admin' for signups (organizations)
+          // Validate organization email for admin signups
+          // Skip validation if name includes a marker indicating creator invitation
+          const isCreatorInvitation = user.name?.includes('[CREATOR_INVITE]');
+
+          if (!isCreatorInvitation) {
+            // This is an admin/organization signup - validate email
+            const emailValidation = isOrganizationEmail(user.email);
+            if (!emailValidation.isValid) {
+              throw new Error(emailValidation.error || 'Please use your organization email address. Personal email providers (Gmail, Yahoo, etc.) are not allowed.');
+            }
+          }
+
+          // Remove the marker if it exists
+          const cleanName = isCreatorInvitation
+            ? user.name.replace('[CREATOR_INVITE]', '').trim()
+            : user.name;
+
+          // Set role to 'admin' for direct signups (will be overridden to 'creator' when accepting invitations)
           return {
             data: {
               ...user,
+              name: cleanName,
               role: 'admin',
             },
           };
