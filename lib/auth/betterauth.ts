@@ -14,7 +14,6 @@ import {
   userHasOrganization,
   getCompanyName,
 } from "./organization-helpers";
-import { isOrganizationEmail } from "@/lib/utils/email-validation";
 
 const logger = createLogger('better-auth');
 
@@ -222,21 +221,28 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user) => {
-          // Validate organizational email for ALL signups (both email/password and OAuth)
-          const validation = isOrganizationEmail(user.email);
+          // Validate organization email for admin signups
+          // Skip validation if name includes a marker indicating creator invitation
+          const isCreatorInvitation = user.name?.includes('[CREATOR_INVITE]') ?? false;
 
-          if (!validation.isValid) {
-            logger.error(
-              { email: user.email, error: validation.error },
-              'Blocked signup attempt with personal email'
-            );
-            // Throw error to prevent user creation
-            throw new Error(
-              validation.error || 'Please use your organization email address'
-            );
+          if (!isCreatorInvitation) {
+            // This is an admin/organization signup - validate email
+            const emailValidation = isOrganizationEmail(user.email);
+            if (!emailValidation.isValid) {
+              logger.error(
+                { email: user.email, error: emailValidation.error },
+                'Blocked signup attempt with personal email'
+              );
+              throw new Error(emailValidation.error || 'Please use your organization email address. Personal email providers (Gmail, Yahoo, etc.) are not allowed.');
+            }
           }
 
-          // Always set role to 'admin' for signups (organizations)
+          // Remove the marker if it exists
+          const cleanName = isCreatorInvitation && user.name
+            ? user.name.replace('[CREATOR_INVITE]', '').trim()
+            : user.name;
+
+          // Set role to 'admin' for direct signups (will be overridden to 'creator' when accepting invitations)
           return {
             data: {
               ...user,
