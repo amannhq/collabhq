@@ -92,12 +92,14 @@ export function ChangePasswordForm({ onSuccess, isFirstLogin = false }: ChangePa
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="currentPassword">Current Password</Label>
+        <Label htmlFor="currentPassword">
+          {isFirstLogin ? 'Temporary Password' : 'Current Password'}
+        </Label>
         <div className="relative">
           <Input
             id="currentPassword"
             type={showCurrentPassword ? 'text' : 'password'}
-            placeholder="Enter temporary password"
+            placeholder={isFirstLogin ? 'Enter temporary password' : 'Enter current password'}
             {...register('currentPassword')}
             disabled={isLoading}
             className="pr-10"
