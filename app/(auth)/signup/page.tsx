@@ -337,9 +337,6 @@ export default function SignupPage() {
               {errors.email && (
                 <p className="text-sm text-red-500">{errors.email.message}</p>
               )}
-              <p className="text-xs text-zinc-500">
-                Organization emails only (no Gmail, Yahoo, etc.)
-              </p>
             </div>
 
             <div className="space-y-2">

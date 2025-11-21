@@ -1,24 +1,11 @@
 // lib/validations/auth.ts
 import { z } from 'zod';
-import { isOrganizationEmail } from '@/lib/utils/email-validation';
 
 export const signupSchema = z
   .object({
     companyName: z.string().min(2, 'Company name must be at least 2 characters').max(100),
     name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-    email: z
-      .string()
-      .email('Invalid email format')
-      .refine(
-        (email) => {
-          const validation = isOrganizationEmail(email);
-          return validation.isValid;
-        },
-        {
-          message:
-            'Please use your organization email. Personal Emails (Gmail, Yahoo, etc.) are not allowed.',
-        }
-      ),
+    email: z.string().email('Invalid email format'),
     password: z
       .string()
       .min(8, 'Password must be at least 8 characters')
