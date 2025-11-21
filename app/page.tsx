@@ -210,8 +210,13 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t border-zinc-200 bg-[#f3f1ea]">
-        <div className="container mx-auto px-4 py-10 text-center">
-          <p className="text-sm text-zinc-600">© 2024 Collab. Built for creator-first teams.</p>
+        <div className="container mx-auto px-4 py-10">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm text-zinc-600 mb-4">
+            <Link href="/privacy" className="hover:text-zinc-900 transition-colors">Privacy Policy</Link>
+            <span className="hidden sm:inline">•</span>
+            <Link href="/terms" className="hover:text-zinc-900 transition-colors">Terms & Conditions</Link>
+          </div>
+          <p className="text-sm text-zinc-600 text-center">© 2025 Collab. Built for creator first teams.</p>
         </div>
       </footer>
     </div>
