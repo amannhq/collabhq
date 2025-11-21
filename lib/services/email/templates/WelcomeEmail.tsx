@@ -1,147 +1,380 @@
 import * as React from 'react';
-import { BaseEmailTemplate } from './BaseEmailTemplate';
+import { Html, Head, Body, Container, Text, Link, Heading } from '@react-email/components';
 
-interface WelcomeEmailProps {
+interface WelcomeEmailNewProps {
   name: string;
   email: string;
   organizationName: string;
   projectName: string;
   temporaryPassword: string;
   dashboardUrl: string;
-  branding?: {
-    logo?: string;
-    primaryColor?: string;
-    secondaryColor?: string;
-  };
 }
 
 export function WelcomeEmail({
+  name,
   email,
   organizationName,
   projectName,
   temporaryPassword,
   dashboardUrl,
-  branding,
-}: WelcomeEmailProps) {
-  const bodyContent = `
-    <div style="margin-bottom: 32px;">
-      <h2 style="font-size: 32px; font-weight: 600; margin: 0 0 12px 0; color: #000000; line-height: 1.2; letter-spacing: -0.5px;">
-        Welcome to ${organizationName}
-      </h2>
-      <p style="font-size: 16px; line-height: 1.6; margin: 0; color: rgba(0, 0, 0, 0.7);">
-        Your account has been created${projectName ? ` for the <strong style="color: #000000;">${projectName}</strong> project` : ''}.
-      </p>
-    </div>
-    
-    <div style="background: #000000; border-radius: 16px; padding: 40px; margin: 32px 0; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-      <div style="text-align: center; margin-bottom: 24px;">
-        <div style="width: 56px; height: 56px; background: rgba(255, 255, 255, 0.1); border-radius: 14px; display: inline-flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-        </div>
-        <h3 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: 600; letter-spacing: -0.5px;">Your Login Credentials</h3>
-        <p style="margin: 8px 0 0 0; color: rgba(255, 255, 255, 0.8); font-size: 14px;">Use these to access your creator dashboard</p>
-      </div>
-      
-      <div style="background: #ffffff; border-radius: 12px; padding: 28px; margin-top: 24px;">
-        <div style="margin-bottom: 24px;">
-          <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0, 0, 0, 0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-              <polyline points="22,6 12,13 2,6"></polyline>
-            </svg>
-            <p style="margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(0, 0, 0, 0.5);">Email Address</p>
-          </div>
-          <div style="background: #f3f1ea; border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 10px; padding: 16px;">
-            <p style="margin: 0; font-size: 16px; color: #000000; font-weight: 600; word-break: break-all;">${email}</p>
-          </div>
-        </div>
-        
-        <div style="margin-bottom: 24px;">
-          <div style="display: flex; align-items: center; margin-bottom: 10px;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(0, 0, 0, 0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px;">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-            <p style="margin: 0; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: rgba(0, 0, 0, 0.5);">Temporary Password</p>
-          </div>
-          <div style="background: #f3f1ea; border: 2px solid #000000; border-radius: 10px; padding: 20px; text-align: center;">
-            <p style="margin: 0; font-family: 'JetBrains Mono', 'Courier New', 'Courier', monospace; font-size: 20px; color: #000000; font-weight: 700; letter-spacing: 3px; word-break: break-all;">${temporaryPassword}</p>
-          </div>
-        </div>
-        
-        <div style="background: #f3f1ea; border-left: 4px solid #000000; border-radius: 10px; padding: 18px;">
-          <div style="display: flex; align-items: start;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 12px; flex-shrink: 0; margin-top: 2px;">
-              <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="8" x2="12" y2="12"></line>
-              <line x1="12" y1="16" x2="12.01" y2="16"></line>
-            </svg>
-            <div>
-              <p style="margin: 0 0 6px 0; font-size: 14px; color: #000000; font-weight: 600;">Security Notice</p>
-              <p style="margin: 0; font-size: 13px; color: rgba(0, 0, 0, 0.7); line-height: 1.6;">
-                This is a temporary password. You'll be required to create a new secure password when you first log in.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="background: #f3f1ea; border: 2px solid rgba(0, 0, 0, 0.1); border-radius: 12px; padding: 32px; margin: 32px 0;">
-      <h3 style="margin: 0 0 24px 0; color: #000000; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 10px;">
-          <polyline points="9 11 12 14 22 4"></polyline>
-          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-        </svg>
-        Next Steps
-      </h3>
-      <div style="display: grid; gap: 16px;">
-        <div style="display: flex; align-items: flex-start; background: white; padding: 18px; border-radius: 10px; border-left: 4px solid #000000; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-          <span style="flex-shrink: 0; width: 32px; height: 32px; background: #000000; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; margin-right: 16px;">1</span>
-          <div>
-            <p style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #000000; line-height: 1.4;">Click the button below to access the creator login page</p>
-            <p style="margin: 0; font-size: 13px; color: rgba(0, 0, 0, 0.6); line-height: 1.5;">Use your email and temporary password from above</p>
-          </div>
-        </div>
-        <div style="display: flex; align-items: flex-start; background: white; padding: 18px; border-radius: 10px; border-left: 4px solid rgba(0, 0, 0, 0.7); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-          <span style="flex-shrink: 0; width: 32px; height: 32px; background: rgba(0, 0, 0, 0.7); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; margin-right: 16px;">2</span>
-          <div>
-            <p style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #000000; line-height: 1.4;">Create your new secure password</p>
-            <p style="margin: 0; font-size: 13px; color: rgba(0, 0, 0, 0.6); line-height: 1.5;">You'll be prompted to set a permanent password immediately</p>
-          </div>
-        </div>
-        <div style="display: flex; align-items: flex-start; background: white; padding: 18px; border-radius: 10px; border-left: 4px solid rgba(0, 0, 0, 0.5); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-          <span style="flex-shrink: 0; width: 32px; height: 32px; background: rgba(0, 0, 0, 0.5); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 14px; margin-right: 16px;">3</span>
-          <div>
-            <p style="margin: 0 0 6px 0; font-size: 15px; font-weight: 600; color: #000000; line-height: 1.4;">Start tracking your posts</p>
-            <p style="margin: 0; font-size: 13px; color: rgba(0, 0, 0, 0.6); line-height: 1.5;">Submit your content and monitor performance analytics</p>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <div style="margin: 32px 0; padding: 20px; background: white; border: 1px solid rgba(0, 0, 0, 0.1); border-radius: 10px;">
-      <p style="margin: 0; font-size: 14px; line-height: 1.6; color: rgba(0, 0, 0, 0.6);">
-        Questions? Contact your team administrator or reply to this email for support.
-      </p>
-    </div>
-  `;
-
+}: WelcomeEmailNewProps) {
   return (
-    <BaseEmailTemplate
-      branding={branding}
-      content={{
-        heading: '',
-        body: bodyContent,
-        ctaText: 'Access Your Dashboard',
-        ctaUrl: dashboardUrl,
-      }}
-      previewText={`Welcome to ${organizationName} - Get started now`}
-    />
+    <Html lang="en">
+      <Head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+        <title>Welcome to {organizationName}</title>
+        <style dangerouslySetInnerHTML={{ __html: emailStyles }} />
+      </Head>
+      <Body style={bodyStyle}>
+        <Container style={containerStyle}>
+          {/* Header */}
+          <div style={headerDarkStyle}>
+            <Heading style={headerH1DarkStyle}>Welcome to {organizationName}</Heading>
+          </div>
+
+          {/* Content */}
+          <div style={contentStyle}>
+            <Text style={paragraphStyle}>
+              Hi <strong style={strongStyle}>{name}</strong>,
+            </Text>
+
+            <Text style={paragraphStyle}>
+              Your account has been created for the <strong style={strongStyle}>{projectName}</strong> project.
+            </Text>
+
+            {/* Credentials Box */}
+            <div style={credentialsBoxStyle}>
+              <div style={credentialsHeaderStyle}>
+                Your Login Credentials
+              </div>
+
+              {/* Email Credential */}
+              <div style={credentialItemStyle}>
+                <div style={credentialLabelStyle}>EMAIL ADDRESS</div>
+                <div style={credentialValueStyle}>{email}</div>
+              </div>
+
+              {/* Password Credential */}
+              <div style={credentialItemStyle}>
+                <div style={credentialLabelStyle}>TEMPORARY PASSWORD</div>
+                <div style={passwordContainerStyle}>
+                  <div style={passwordValueStyle}>{temporaryPassword}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div style={securityNoticeStyle}>
+              <Text style={securityNoticeTextStyle}>
+                <strong>Important:</strong> This is a temporary password. You&apos;ll create a new secure password when you first sign in.
+              </Text>
+            </div>
+
+            {/* CTA Button */}
+            <div style={buttonContainerStyle}>
+              <Link href={dashboardUrl} style={buttonStyle}>
+                Access Dashboard
+              </Link>
+            </div>
+
+            <Text style={textSmallCenterStyle}>
+              Sign in with your email and temporary password to get started.
+            </Text>
+          </div>
+
+          {/* Footer */}
+          <div style={footerStyle}>
+            <Text style={footerTextStyle}>
+              Questions? Contact your team administrator or reply to this email for support.
+            </Text>
+          </div>
+        </Container>
+      </Body>
+    </Html>
   );
+}
+
+const emailStyles = `
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  @media only screen and (max-width: 600px) {
+    .email-header h1 {
+      font-size: 22px !important;
+      line-height: 1.3 !important;
+    }
+    .email-content p {
+      font-size: 15px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 16px 0 !important;
+    }
+    .credentials-box {
+      padding: 20px 14px !important;
+      margin: 24px 0 20px 0 !important;
+    }
+    .credentials-header {
+      font-size: 15px !important;
+      margin-bottom: 16px !important;
+    }
+    .credential-item {
+      padding: 12px 14px !important;
+      margin: 10px 0 !important;
+    }
+    .credential-label {
+      font-size: 9px !important;
+      margin-bottom: 8px !important;
+    }
+    .credential-value {
+      font-size: 13px !important;
+      padding: 10px 12px !important;
+    }
+    .password-value {
+      font-size: 17px !important;
+      letter-spacing: 0.14em !important;
+      padding: 14px 12px !important;
+    }
+    .security-notice {
+      padding: 14px 16px !important;
+      margin: 20px 0 !important;
+    }
+    .security-notice p {
+      font-size: 12px !important;
+      line-height: 1.5 !important;
+    }
+    .btn {
+      padding: 13px 24px !important;
+      font-size: 15px !important;
+      width: 100% !important;
+      display: block !important;
+    }
+    .button-container {
+      margin: 24px 0 16px 0 !important;
+    }
+    .text-small {
+      font-size: 12px !important;
+    }
+    .email-footer p {
+      font-size: 12px !important;
+    }
+  }
+
+  @media only screen and (max-width: 480px) {
+    .email-header h1 {
+      font-size: 20px !important;
+      line-height: 1.3 !important;
+    }
+    .email-content p {
+      font-size: 14px !important;
+      line-height: 1.5 !important;
+      margin: 0 0 14px 0 !important;
+    }
+    .credentials-box {
+      padding: 18px 12px !important;
+      margin: 20px 0 16px 0 !important;
+    }
+    .credentials-header {
+      font-size: 14px !important;
+      margin-bottom: 14px !important;
+    }
+    .credential-item {
+      padding: 10px 12px !important;
+      margin: 8px 0 !important;
+    }
+    .credential-label {
+      font-size: 9px !important;
+      margin-bottom: 7px !important;
+    }
+    .credential-value {
+      font-size: 12px !important;
+      padding: 9px 10px !important;
+    }
+    .password-value {
+      font-size: 16px !important;
+      letter-spacing: 0.12em !important;
+      padding: 12px 10px !important;
+    }
+    .security-notice {
+      padding: 12px 14px !important;
+      margin: 16px 0 !important;
+    }
+    .security-notice p {
+      font-size: 11px !important;
+    }
+    .btn {
+      padding: 12px 20px !important;
+      font-size: 14px !important;
+    }
+    .button-container {
+      margin: 20px 0 14px 0 !important;
+    }
+    .text-small {
+      font-size: 11px !important;
+    }
+    .email-footer p {
+      font-size: 11px !important;
+    }
+  }
+`;
+
+const bodyStyle: React.CSSProperties = {
+  fontFamily: "'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+  backgroundColor: '#f3f1ea',
+  padding: '40px 20px',
+  margin: 0,
+  lineHeight: '1.6',
 };
 
-export default WelcomeEmail;
+const containerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
+  margin: '0 auto',
+  maxWidth: '600px',
+  overflow: 'hidden',
+};
+
+const headerDarkStyle: React.CSSProperties = {
+  backgroundColor: '#18181b',
+  padding: '48px 40px',
+  textAlign: 'center',
+  color: '#ffffff',
+};
+
+const headerH1DarkStyle: React.CSSProperties = {
+  fontSize: '28px',
+  fontWeight: 600,
+  margin: 0,
+  letterSpacing: '-0.02em',
+  color: '#ffffff',
+};
+
+const contentStyle: React.CSSProperties = {
+  padding: '40px 40px 48px',
+  backgroundColor: '#f3f1ea',
+};
+
+const paragraphStyle: React.CSSProperties = {
+  fontSize: '16px',
+  lineHeight: '1.6',
+  color: '#333333',
+  margin: '0 0 20px 0',
+};
+
+const strongStyle: React.CSSProperties = {
+  color: '#18181b',
+  fontWeight: 600,
+};
+
+const credentialsBoxStyle: React.CSSProperties = {
+  backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  padding: '24px 20px',
+  margin: '24px 0 20px 0',
+};
+
+const credentialsHeaderStyle: React.CSSProperties = {
+  fontSize: '16px',
+  fontWeight: 600,
+  marginBottom: '20px',
+  letterSpacing: '-0.01em',
+  color: '#18181b',
+  textAlign: 'center',
+};
+
+const credentialItemStyle: React.CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.7)',
+  padding: '12px 16px',
+  margin: '10px 0',
+  border: '1px solid rgba(24, 24, 27, 0.08)',
+};
+
+const credentialLabelStyle: React.CSSProperties = {
+  fontSize: '10px',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.1em',
+  color: '#999999',
+  marginBottom: '10px',
+};
+
+const credentialValueStyle: React.CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.6)',
+  padding: '12px 14px',
+  fontSize: '14px',
+  color: '#18181b',
+  fontWeight: 500,
+  wordBreak: 'break-all',
+  fontFamily: "'JetBrains Mono', 'SF Mono', Monaco, 'Courier New', monospace",
+};
+
+const passwordContainerStyle: React.CSSProperties = {
+  position: 'relative',
+  display: 'flex',
+  alignItems: 'center',
+  gap: '8px',
+};
+
+const passwordValueStyle: React.CSSProperties = {
+  flex: 1,
+  textAlign: 'center',
+  fontFamily: "'JetBrains Mono', 'SF Mono', Monaco, 'Courier New', monospace",
+  fontSize: '18px',
+  fontWeight: 600,
+  letterSpacing: '0.15em',
+  backgroundColor: '#18181b',
+  color: '#f3f1ea',
+  padding: '14px 12px',
+};
+
+const securityNoticeStyle: React.CSSProperties = {
+  background: 'rgba(255, 255, 255, 0.5)',
+  padding: '16px 18px',
+  margin: '24px 0',
+  borderLeft: '3px solid #18181b',
+};
+
+const securityNoticeTextStyle: React.CSSProperties = {
+  fontSize: '13px',
+  margin: 0,
+  lineHeight: '1.6',
+  color: '#666666',
+};
+
+const buttonContainerStyle: React.CSSProperties = {
+  textAlign: 'center',
+  margin: '28px 0 20px 0',
+};
+
+const buttonStyle: React.CSSProperties = {
+  backgroundColor: '#18181b',
+  color: '#f3f1ea',
+  fontSize: '15px',
+  fontWeight: 500,
+  textDecoration: 'none',
+  padding: '14px 36px',
+  display: 'inline-block',
+  letterSpacing: 0,
+};
+
+const textSmallCenterStyle: React.CSSProperties = {
+  fontSize: '13px',
+  color: '#999999',
+  margin: 0,
+  textAlign: 'center',
+};
+
+const footerStyle: React.CSSProperties = {
+  backgroundColor: '#f3f1ea',
+  padding: '32px 40px',
+  textAlign: 'center',
+  borderTop: '1px solid rgba(24, 24, 27, 0.1)',
+};
+
+const footerTextStyle: React.CSSProperties = {
+  color: '#888888',
+  fontSize: '13px',
+  margin: 0,
+  lineHeight: '1.5',
+};

@@ -178,12 +178,30 @@ export const auth = betterAuth({
             OTP_EMAIL_SUBJECTS[type as keyof typeof OTP_EMAIL_SUBJECTS] ||
             'Verification Code - Collab';
 
+          const titles = {
+            'email-verification': 'Verify Your Email',
+            'sign-in': 'Sign In to Your Account',
+            'forget-password': 'Reset Your Password',
+          };
+
+          const descriptions = {
+            'email-verification':
+              'Thank you for signing up! Use the verification code below to complete your registration and start managing your creator partnerships.',
+            'sign-in':
+              'Use the code below to securely sign in to your account. This code will expire in 5 minutes.',
+            'forget-password':
+              'You requested to reset your password. Use the code below to create a new password for your account.',
+          };
+
+          const otpType = type as 'email-verification' | 'sign-in' | 'forget-password';
+
           await sendEmail({
             to: email,
             subject,
             react: OTPEmail({
               otp,
-              type: type as 'email-verification' | 'sign-in' | 'forget-password',
+              title: titles[otpType],
+              description: descriptions[otpType],
             }),
           });
 
