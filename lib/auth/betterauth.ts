@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/services/email/email-service";
 import { OTPEmail } from "@/lib/services/email/templates/OTPEmail";
 import connectDB from "@/lib/db/mongodb";
 import type { IUser } from "@/lib/db/models/User";
+import { isOrganizationEmail } from "@/lib/utils/email-validation";
 import {
   createOrganizationForUser,
   userHasOrganization,
@@ -239,6 +240,7 @@ export const auth = betterAuth({
           return {
             data: {
               ...user,
+              name: cleanName,
               role: 'admin',
             },
           };

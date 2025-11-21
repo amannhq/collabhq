@@ -57,11 +57,12 @@ export async function POST(request: NextRequest) {
     const temporaryPassword = crypto.randomBytes(16).toString('hex');
 
     // Create user account with Better Auth
+    // Add [CREATOR_INVITE] marker to name to bypass organization email validation
     const user = await auth.api.signUpEmail({
       body: {
         email: invitation.email,
         password: temporaryPassword,
-        name: invitation.creatorData.name,
+        name: `${invitation.creatorData.name}[CREATOR_INVITE]`,
       },
     });
 

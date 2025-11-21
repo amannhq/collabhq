@@ -16,7 +16,7 @@ export const signupSchema = z
         },
         {
           message:
-            'Please use your organization email. Personal Emails (Gmail, Yahoo, etc.) are not allowed.',
+            'Please use your organization email. Personal emails (Gmail, Yahoo, etc.) are not allowed.',
         }
       ),
     password: z

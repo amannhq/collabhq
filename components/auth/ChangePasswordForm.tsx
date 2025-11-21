@@ -91,14 +91,6 @@ export function ChangePasswordForm({ onSuccess, isFirstLogin = false }: ChangePa
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {isFirstLogin && (
-        <div className="p-4 bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <p className="text-sm text-blue-800 dark:text-blue-200">
-            <strong>First login detected.</strong> Please set a new secure password to continue.
-          </p>
-        </div>
-      )}
-
       <div className="space-y-2">
         <Label htmlFor="currentPassword">Current Password</Label>
         <div className="relative">
