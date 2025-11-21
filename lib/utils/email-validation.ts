@@ -5,6 +5,7 @@
  */
 const FREE_EMAIL_DOMAINS = [
   'gmail.com',
+  'googlemail.com', // Alternative Gmail domain
   'yahoo.com',
   'hotmail.com',
   'outlook.com',
@@ -62,7 +63,15 @@ export function isOrganizationEmail(email: string): {
   if (FREE_EMAIL_DOMAINS.includes(domain)) {
     return {
       isValid: false,
-      error: 'Please use your organization email address. Free email providers (Gmail, Yahoo, etc.) are not allowed.',
+      error: 'Please use your organization email address. Personal email providers (Gmail, Yahoo, etc.) are not allowed.',
+    };
+  }
+
+  // Additional check: Reject emails from gmail.com or googlemail.com subdomains
+  if (domain.includes('gmail.') || domain.includes('googlemail.')) {
+    return {
+      isValid: false,
+      error: 'Personal Gmail accounts are not allowed. Please use your organization email address.',
     };
   }
 
