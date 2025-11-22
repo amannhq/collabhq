@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Toaster } from "sonner";
 import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
@@ -12,9 +13,9 @@ import "./globals.css";
 
 const siteConfig = {
   name: "Collab",
-  title: "Collab - Creator Management Platform",
-  description: "Manage creator partnerships, track performance metrics, and streamline collaboration. The all-in-one platform for teams managing creator campaigns at scale.",
-  url: process.env.NEXT_PUBLIC_APP_URL || "https://collab.app",
+  title: "Collab - Creator Management & Campaign Tracking",
+  description: "Manage creator partnerships, track metrics, and streamline campaigns. The all-in-one platform for teams managing creators at scale.",
+  url: process.env.NEXT_PUBLIC_APP_URL || "https://collabhq.in",
   ogImage: "/images/meta.png",
   keywords: [
     "creator management",
@@ -104,8 +105,20 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-DV8GFF8V0Q"
+          strategy="afterInteractive"
+        />
+        <Script id="google-analytics" strategy="afterInteractive">
+          {`
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-DV8GFF8V0Q');
+          `}
+        </Script>
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="bottom-right" />
       </body>
     </html>
   );
